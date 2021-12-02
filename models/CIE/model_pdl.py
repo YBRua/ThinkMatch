@@ -1,5 +1,5 @@
-import torch
-import torch.nn as nn
+import paddle
+import paddle.nn as nn
 
 from src.lap_solvers_pdl.sinkhorn import Sinkhorn
 from src.utils_pdl.feature_align import feature_align
@@ -7,15 +7,18 @@ from src.utils_pdl.gconv import Siamese_ChannelIndependentConv
 from models.PCA.affinity_layer import Affinity
 from src.lap_solvers_pdl.hungarian import hungarian
 
+from typing import Dict
+
 from src.utils.config import cfg
 
 from src.utils_pdl.backbone import *
-CNN = eval(cfg.BACKBONE)
+CNN: nn.Layer = eval(cfg.BACKBONE)
 
 
 class Net(CNN):
     def __init__(self):
         super(Net, self).__init__()
+        self.module_dict: Dict[str, nn.Layer] = {}
         self.sinkhorn = Sinkhorn(
             max_iter=cfg.CIE.SK_ITER_NUM, epsilon=cfg.CIE.SK_EPSILON, tau=cfg.CIE.SK_TAU)
         self.l2norm = nn.LocalResponseNorm(
@@ -37,6 +40,12 @@ class Net(CNN):
                 self.add_module('cross_graph_edge_{}'.format(
                     i), nn.Linear(cfg.CIE.GNN_FEAT * 2, cfg.CIE.GNN_FEAT))
         self.rescale = cfg.PROBLEM.RESCALE
+
+    def add_module(self, key: str, module: nn.Layer):
+        self.module_dict[key] = module
+
+    def getattr(self, key: str) -> nn.Layer:
+        return self.module_dict[key]
 
     def forward(self, data_dict, **kwargs):
         if 'images' in data_dict:
@@ -78,23 +87,23 @@ class Net(CNN):
             raise ValueError('Unknown data type for this model.')
 
         P_src_dis = (P_src.unsqueeze(1) - P_src.unsqueeze(2))
-        P_src_dis = torch.norm(P_src_dis, p=2, dim=3).detach()
+        P_src_dis = paddle.norm(P_src_dis, p=2, dim=3).detach()
         P_tgt_dis = (P_tgt.unsqueeze(1) - P_tgt.unsqueeze(2))
-        P_tgt_dis = torch.norm(P_tgt_dis, p=2, dim=3).detach()
+        P_tgt_dis = paddle.norm(P_tgt_dis, p=2, dim=3).detach()
 
-        Q_src = torch.exp(-P_src_dis / self.rescale[0])
-        Q_tgt = torch.exp(-P_tgt_dis / self.rescale[0])
+        Q_src = paddle.exp(-P_src_dis / self.rescale[0])
+        Q_tgt = paddle.exp(-P_tgt_dis / self.rescale[0])
 
         emb_edge1 = Q_src.unsqueeze(-1)
         emb_edge2 = Q_tgt.unsqueeze(-1)
 
         # adjacency matrices
-        A_src = torch.bmm(G_src, H_src.transpose(1, 2))
-        A_tgt = torch.bmm(G_tgt, H_tgt.transpose(1, 2))
+        A_src = paddle.bmm(G_src, H_src.transpose(1, 2))
+        A_tgt = paddle.bmm(G_tgt, H_tgt.transpose(1, 2))
 
         # U_src, F_src are features at different scales
-        emb1, emb2 = torch.cat((U_src, F_src), dim=1).transpose(
-            1, 2), torch.cat((U_tgt, F_tgt), dim=1).transpose(1, 2)
+        emb1, emb2 = paddle.cat((U_src, F_src), dim=1).transpose(
+            1, 2), paddle.cat((U_tgt, F_tgt), dim=1).transpose(1, 2)
         ss = []
 
         for i in range(self.gnn_layer):
@@ -113,9 +122,9 @@ class Net(CNN):
             if i == self.gnn_layer - 2:
                 cross_graph = getattr(self, 'cross_graph_{}'.format(i))
                 new_emb1 = cross_graph(
-                    torch.cat((emb1, torch.bmm(s, emb2)), dim=-1))
+                    paddle.cat((emb1, paddle.bmm(s, emb2)), dim=-1))
                 new_emb2 = cross_graph(
-                    torch.cat((emb2, torch.bmm(s.transpose(1, 2), emb1)), dim=-1))
+                    paddle.cat((emb2, paddle.bmm(s.transpose(1, 2), emb1)), dim=-1))
                 emb1 = new_emb1
                 emb2 = new_emb2
 
