@@ -7,6 +7,8 @@ from paddle import vision
 
 from models.PCA.model import Net as tchPCA
 from models.PCA.model_pdl import Net as pdlPCA
+from models.CIE.model import Net as TorchCIE
+from models.CIE.model_pdl import Net as PaddleCIE
 from src.utils.model_sl import load_model
 from src.utils.config import cfg
 
@@ -67,7 +69,7 @@ def convert_params(model_th, model_pd, model_path):
     model_pd.set_dict(state_dict)
 
     fluid.dygraph.save_dygraph(model_pd.state_dict(), model_path=model_path)
-    print("model convert successfully.")
+    print("model converted successfully.")
 
 
 def vgg_convert():
@@ -80,6 +82,21 @@ def vgg_convert():
         print(model_pd.state_dict().keys())
         print(len(model_pd.state_dict().keys()))
         convert_params(model_th, model_pd, model_path)
+
+
+def cie_convert():
+    with fluid.dygraph.guard():
+        model_torch = TorchCIE()
+        model_paddle = PaddleCIE()
+        load_model(
+            model_torch,
+            "pretrained/pretrained_params_vgg16_cie_voc.pt")
+        model_path = "./pretrained/paddle_vgg16_cie_voc"
+        print(model_torch.state_dict().keys())
+        print(len(model_torch.state_dict().keys()))
+        print(model_paddle.state_dict().keys())
+        print(len(model_paddle.state_dict().keys()))
+        convert_params(model_torch, model_paddle, model_path)
 
 
 def pca_convert():
@@ -108,4 +125,5 @@ if __name__ == '__main__':
 
     args = parse_args(
         'Deep learning of graph matching training & evaluation code.')
-    pca_convert()
+    # pca_convert()
+    cie_convert()
