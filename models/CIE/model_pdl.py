@@ -11,8 +11,8 @@ from typing import Dict
 
 from src.utils.config import cfg
 
-from src.utils_pdl.backbone import *
-CNN: nn.Layer = eval(cfg.BACKBONE)
+import src.utils.backbone
+CNN = eval(f'src.utils.backbone.{cfg.BACKBONE}')
 
 
 class Net(CNN):
