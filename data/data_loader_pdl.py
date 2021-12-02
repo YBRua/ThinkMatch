@@ -2,7 +2,7 @@
 # unfixed random seed is NOT available now
 import paddle
 import paddle.nn.functional as F
-from paddle.io import Dataset
+from paddle.io import Dataset, DataLoader
 from paddle.vision import transforms
 import numpy as np
 import random
@@ -179,7 +179,7 @@ def worker_init_rand(worker_id):
     np.random.seed(paddle.initial_seed() % 2 ** 32)
 
 
-def get_dataloader(dataset, fix_seed=True, shuffle=False):
+def get_dataloader(dataset, fix_seed=True, shuffle=False) -> DataLoader:
     fix_seed = True #"Paddle version now do NOT support unfixed seed"
     return paddle.io.DataLoader(
         dataset, batch_size=cfg.BATCH_SIZE, shuffle=shuffle, num_workers=cfg.DATALOADER_NUM, collate_fn=collate_fn,
