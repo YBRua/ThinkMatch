@@ -4,11 +4,12 @@ import paddle.nn as nn
 import numpy as np
 from datetime import datetime
 from pathlib import Path
-import xlwt
+# import xlwt  # TODO: support for xlsx result output
 from src.utils.timer import Timer
 import src.utils_pdl.evaluation_metric as metric
 
-from data.data_loader_pdl import GMDataset, get_dataloader
+from data.data_loader_pdl import get_dataloader
+from src.utils_pdl.model_sl import load_model
 # TODO: Support for dataparallel
 from typing import List
 from paddle.io import DataLoader
@@ -55,9 +56,9 @@ def eval_model(
     coverages = []
     pred_time = []
     objs = paddle.to_tensor(np.zeros(len(classes)))
-    cluster_acc = []
-    cluster_purity = []
-    cluster_ri = []
+    # cluster_acc = []  # not used in 2GM
+    # cluster_purity = []  # not used in 2Gm
+    # cluster_ri = []  # not used in 2GM
 
     timer = Timer()
 
@@ -75,8 +76,8 @@ def eval_model(
         pred_time_list = []
         obj_total_num = paddle.zeros(1)
         cluster_acc_list = []
-        cluster_purity_list = []
-        cluster_ri_list = []
+        # cluster_purity_list = []  # not used in 2GM
+        # cluster_ri_list = []  # not used in 2GM
         prediction_cls = []
 
         for inputs in dataloaders[i]:
@@ -163,3 +164,79 @@ def eval_model(
         for idx, (cls, cls_obj) in enumerate(zip(classes, objs)):
             print(f'{cls} = {cls_obj:.4f}')
         print(f'Average Objective Score = {paddle.mean(objs):.4f}')
+
+    print('Prediction time')
+    for idx, (cls, cls_time) in enumerate(zip(classes, pred_time)):
+        print(f'{cls} = {metric.format_metric(cls_time)}')
+    print(f'average time = {metric.format_metric(paddle.concat(pred_time))}')
+
+    bm.rm_gt_cache(last_epoch=last_epoch)
+
+    return paddle.to_tensor(recalls)
+
+
+if __name__ == '__main__':
+    from src.utils.dup_stdout_manager import DupStdoutFileManager
+    from src.utils.parse_args import parse_args
+    from src.utils.print_easydict import print_easydict
+
+    args = parse_args('DL Graph Matching PaddlePaddle Implementation.')
+
+    import importlib
+    module = importlib.import_module(cfg.MODULE)
+    Net = module.Net
+
+    paddle.seed(cfg.RANDOM_SEED)
+
+    if ('DATASET_FULL_NAME' in cfg) and (cfg.DATASET_FULL_NAME in cfg):
+        ds_dict = cfg[cfg.DATASET_FULL_NAME]
+    else:
+        ds_dict = {}
+    benchmark = Benchmark(name=cfg.DATASET_FULL_NAME,
+                          sets='test',
+                          problem=cfg.PROBLEM.TYPE,
+                          obj_resize=cfg.PROBLEM.RESCALE,
+                          filter=cfg.PROBLEM.FILTER,
+                          **ds_dict)
+
+    cls = None if cfg.EVAL.CLASS in ['none', 'all'] else cfg.EVAL.CLASS
+    if cls is None:
+        clss = benchmark.classes
+    else:
+        clss = [cls]
+
+    device = 'gpu:0'
+
+    model = Net()
+    model = model.to(device)
+    # TODO: Add support for DataParallel
+    # eliphatfs: Dont add it. Nobody uses it.
+
+    if not Path(cfg.OUTPUT_PATH).exists():
+        Path(cfg.OUTPUT_PATH).mkdir(parents=True)
+    now_time = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+    with DupStdoutFileManager(
+            str(Path(cfg.OUTPUT_PATH) / ('eval_log_' + now_time + '.log'))
+    ) as _:
+        print_easydict(cfg)
+
+        model_path = ''
+        # if cfg.EVAL.EPOCH is not None and cfg.EVAL.EPOCH > 0:
+        #     model_path = str(
+        #         Path(cfg.OUTPUT_PATH) / 'params' / 'params_{:04}.pt'
+        #         .format(cfg.EVAL.EPOCH))
+        # if len(cfg.PRETRAINED_PATH) > 0:
+        #     model_path = cfg.PRETRAINED_PATH
+        if len(model_path) > 0:
+            print('Loading model parameters from {}'.format(model_path))
+            load_model(model, model_path)
+        else:
+            raise NotImplementedError(
+                'Unsupported model S/L mechanism.')
+
+        pcks = eval_model(
+            model, clss,
+            benchmark,
+            verbose=True,
+            xls_sheet=None
+        )
