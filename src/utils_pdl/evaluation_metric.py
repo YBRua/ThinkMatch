@@ -83,3 +83,13 @@ def objective_score(pmat_pred, affmtx, ns):
     obj_score = paddle.matmul(paddle.matmul(p_vec.transpose(1, 2), affmtx), p_vec).reshape(-1)
 
     return obj_score
+
+
+def format_metric(ms) -> str:
+    r"""
+    Helping function for formatting single metric.
+
+    :param ms: tensor containing metric
+    :return: a formatted string containing mean and variance
+    """
+    return '{:.4f}±{:.4f}'.format(paddle.mean(ms), paddle.std(ms))
