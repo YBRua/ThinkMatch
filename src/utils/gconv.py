@@ -151,7 +151,7 @@ class Siamese_ChannelIndependentConv(nn.Module):
     def __init__(self, in_features, num_features, in_edges, out_edges=None):
         super(Siamese_ChannelIndependentConv, self).__init__()
         self.in_feature = in_features
-        self.gconv = ChannelIndependentConv(in_features, num_features, in_edges, out_edges)
+        self.gconv1 = ChannelIndependentConv(in_features, num_features, in_edges, out_edges)
 
     def forward(self, g1: Tuple[Tensor, Tensor, Optional[bool]], *args) -> List[Tensor]:
         r"""
@@ -164,10 +164,10 @@ class Siamese_ChannelIndependentConv(nn.Module):
         :return: A list of tensors composed of new node embeddings :math:`(b\times n\times d^\prime)`, appended with new
          edge embeddings :math:`(b\times n\times n\times d^\prime)`
         """
-        emb1, emb_edge1 = self.gconv(*g1)
+        emb1, emb_edge1 = self.gconv1(*g1)
         embs = [emb1]
         emb_edges = [emb_edge1]
         for g in args:
-            emb2, emb_edge2 = self.gconv(*g)
+            emb2, emb_edge2 = self.gconv1(*g)
             embs.append(emb2), emb_edges.append(emb_edge2)
         return embs + emb_edges

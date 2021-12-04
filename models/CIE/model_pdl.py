@@ -42,10 +42,10 @@ class Net(CNN):
         self.rescale = cfg.PROBLEM.RESCALE
 
     def add_module(self, key: str, module: nn.Layer):
-        self.module_dict[key] = module
+        setattr(self, key, module)
 
     def getattr(self, key: str) -> nn.Layer:
-        return self.module_dict[key]
+        return getattr(self, key)
 
     def forward(self, data_dict, **kwargs):
         if 'images' in data_dict:

@@ -1,9 +1,7 @@
 """Graph matching config system.
-
 This file specifies default config options for Fast R-CNN. You should not
 change values in this file. Instead, you should write a config file (in yaml)
 and use cfg_from_file(yaml_file) to load it and override the default options.
-
 Most tools in $ROOT/tools take a --cfg option to specify an override file.
     - See tools/{train,test}_net.py for example code that uses cfg_from_file()
     - See experiments/cfgs/*.yml for example YAML config override files
@@ -11,56 +9,75 @@ Most tools in $ROOT/tools take a --cfg option to specify an override file.
 
 import os
 from easydict import EasyDict as edict
-import numpy as np
+import importlib
 
 __C = edict()
 # Consumers can get config by:
-#   from fast_rcnn_config import cfg
+#   from config import cfg
 cfg = __C
 
 # Minibatch size
 __C.BATCH_SIZE = 4
 
-# Pairwise data loader settings.
-__C.PAIR = edict()
-__C.PAIR.RESCALE = (256, 256)  # rescaled image size
-__C.PAIR.GT_GRAPH_CONSTRUCT = 'tri'
-__C.PAIR.REF_GRAPH_CONSTRUCT = 'fc'
+#
+# Problem settings. Set these parameters the same for fair comparison.
+#
+__C.PROBLEM = edict()
 
-# VOC2011-Keypoint Dataset
-__C.VOC2011 = edict()
-__C.VOC2011.KPT_ANNO_DIR = 'data/PascalVOC/annotations/'  # keypoint annotation
-__C.VOC2011.ROOT_DIR = 'data/PascalVOC/VOC2011/'  # original VOC2011 dataset
-__C.VOC2011.SET_SPLIT = 'data/PascalVOC/voc2011_pairs.npz'  # set split path
-__C.VOC2011.CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow',
-                       'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train',
-                       'tvmonitor']
+# Problem type.
+# Candidates can be '2GM' (two graph matching), 'MGM' (multi-graph matching), 'MGMC' (multi-graph matching and clustering)
+__C.PROBLEM.TYPE = '2GM'
 
-# Willow-Object Dataset
-__C.WILLOW = edict()
-__C.WILLOW.ROOT_DIR = 'data/WILLOW-ObjectClass'
-__C.WILLOW.CLASSES = ['Car', 'Duck', 'Face', 'Motorbike', 'Winebottle']
-__C.WILLOW.KPT_LEN = 10
-__C.WILLOW.TRAIN_NUM = 20
-__C.WILLOW.TRAIN_OFFSET = 0
+# If UNSUPERVISED==True, ground truth permutations will not be provided during training.
+__C.PROBLEM.UNSUPERVISED = False
 
-# GMN model options
-__C.GMN = edict()
-__C.GMN.FEATURE_CHANNEL = 512
-__C.GMN.PI_ITER_NUM = 50
-__C.GMN.PI_STOP_THRESH = 2e-7
-__C.GMN.BS_ITER_NUM = 10
-__C.GMN.BS_EPSILON = 1e-10
-__C.GMN.VOTING_ALPHA = 2e8
+# Rescaled image size
+__C.PROBLEM.RESCALE = (256, 256)
 
-# PCA model options
-__C.PCA = edict()
-__C.PCA.FEATURE_CHANNEL = 512
-__C.PCA.BS_ITER_NUM = 20
-__C.PCA.BS_EPSILON = 1.0e-10
-__C.PCA.VOTING_ALPHA = 200.
-__C.PCA.GNN_LAYER = 5
-__C.PCA.GNN_FEAT = 1024
+# Filter of the keypoint. Chosen from 'intersection', 'inclusion', 'unfiltered'
+__C.PROBLEM.FILTER = 'intersection'
+
+# Do not include the problem if n_1 x n_2 > MAX_PROB_SIZE. -1 for no filtering
+__C.PROBLEM.MAX_PROB_SIZE = -1
+
+# # Allow outlier in source graph. Useful for 2GM
+# __C.PROBLEM.SRC_OUTLIER = False
+#
+# # Allow outlier in target graph. Useful for 2GM
+# __C.PROBLEM.TGT_OUTLIER = False
+
+# Number of graphs in a MGM/MGMC problem. Useful for MGM & MGMC
+# No effect if TEST_ALL_GRAPHS/TRAIN_ALL_GRAPHS=True
+__C.PROBLEM.NUM_GRAPHS = 3
+
+# Number of clusters in MGMC problem. Useful for MGMC
+__C.PROBLEM.NUM_CLUSTERS = 1
+
+# During testing, jointly match all graphs from the same class. Useful for MGM & MGMC
+__C.PROBLEM.TEST_ALL_GRAPHS = False
+
+# During training, jointly match all graphs from the same class. Useful for MGM & MGMC
+__C.PROBLEM.TRAIN_ALL_GRAPHS = False
+
+# Shape of candidates, useful for the setting in Zanfir et al CVPR2018
+#__C.PROBLEM.CANDIDATE_SHAPE = (16, 16)
+#__C.PROBLEM.CANDIDATE_LENGTH = np.cumprod(__C.PAIR.CANDIDATE_SHAPE)[-1]
+
+#
+# Graph construction settings.
+#
+__C.GRAPH = edict()
+
+# The ways of constructing source graph/target graph.
+# Candidates can be 'tri' (Delaunay triangulation), 'fc' (Fully-connected)
+__C.GRAPH.SRC_GRAPH_CONSTRUCT = 'tri'
+__C.GRAPH.TGT_GRAPH_CONSTRUCT = 'fc'
+
+# Build a symmetric adjacency matrix, else only the upper right triangle of adjacency matrix will be filled
+__C.GRAPH.SYM_ADJACENCY = True
+
+# Padding length on number of keypoints for batched operation
+__C.GRAPH.PADDING = 23
 
 #
 # Training options
@@ -77,8 +94,17 @@ __C.TRAIN.START_EPOCH = 0
 # Total epochs
 __C.TRAIN.NUM_EPOCHS = 30
 
+# Optimizer type
+__C.TRAIN.OPTIMIZER = 'SGD'
+
 # Start learning rate
 __C.TRAIN.LR = 0.01
+
+# Use separate learning rate for the CNN backbone
+__C.TRAIN.SEPARATE_BACKBONE_LR = False
+
+# Start learning rate for backbone
+__C.TRAIN.BACKBONE_LR = __C.TRAIN.LR
 
 # Learning rate decay
 __C.TRAIN.LR_DECAY = 0.1
@@ -90,14 +116,13 @@ __C.TRAIN.LR_STEP = [10, 20]
 __C.TRAIN.MOMENTUM = 0.9
 
 # RobustLoss normalization
-__C.TRAIN.RLOSS_NORM = max(__C.PAIR.RESCALE)
+__C.TRAIN.RLOSS_NORM = max(__C.PROBLEM.RESCALE)
 
 # Specify a class for training
 __C.TRAIN.CLASS = 'none'
 
 # Loss function. Should be 'offset' or 'perm'
 __C.TRAIN.LOSS_FUNC = 'perm'
-
 
 #
 # Evaluation options
@@ -108,12 +133,15 @@ __C.EVAL = edict()
 # Evaluation epoch number
 __C.EVAL.EPOCH = 30
 
-# PCK metric
-__C.EVAL.PCK_ALPHAS = [0.05, 0.10]
-__C.EVAL.PCK_L = float(max(__C.PAIR.RESCALE))  # PCK reference.
+# PCK metric (deprecated)
+#__C.EVAL.PCK_ALPHAS = []
+# __C.EVAL.PCK_L = float(max(__C.PROBLEM.RESCALE))  # PCK reference.
 
 # Number of samples for testing. Stands for number of image pairs in each classes (VOC)
 __C.EVAL.SAMPLES = 1000
+
+# Evaluated classes
+__C.EVAL.CLASS = 'all'
 
 #
 # MISC
@@ -128,6 +156,9 @@ __C.GPUS = [0]
 # num of dataloader processes
 __C.DATALOADER_NUM = __C.BATCH_SIZE
 
+# path to load pretrained model weights
+__C.PRETRAINED_PATH = ''
+
 # Mean and std to normalize images
 __C.NORM_MEANS = [0.485, 0.456, 0.406]
 __C.NORM_STD = [0.229, 0.224, 0.225]
@@ -138,12 +169,12 @@ __C.CACHE_PATH = 'data/cache'
 # Model name and dataset name
 __C.MODEL_NAME = ''
 __C.DATASET_NAME = ''
-__C.DATASET_FULL_NAME = 'PascalVOC' # 'PascalVOC' or 'WillowObject'
+__C.DATASET_FULL_NAME = ''
 
 # Module path of module
 __C.MODULE = ''
 
-# Output path (for checkpoints, running logs and visualization results)
+# Output path (for checkpoints, running logs)
 __C.OUTPUT_PATH = ''
 
 # The step of iteration to print running statistics.
@@ -152,6 +183,10 @@ __C.STATISTIC_STEP = 100
 
 # random seed used for data loading
 __C.RANDOM_SEED = 123
+
+# enable fp16 instead of fp32 in the model (via nvidia/apex)
+__C.FP16 = False
+
 
 def lcm(x, y):
     """
@@ -171,7 +206,7 @@ def get_output_dir(model, dataset):
     Return the directory where experimental artifacts are placed.
     :param model: model name
     :param dataset: dataset name
-    :return: output path (checkpoint and log), visual path (visualization images)
+    :return: output path (checkpoint and log)
     """
     outp_path = os.path.join('output', '{}_{}'.format(model, dataset))
     return outp_path
@@ -191,9 +226,12 @@ def _merge_a_into_b(a, b):
 
         # the types must match, too
         if type(b[k]) is not type(v):
-            raise ValueError(('Type mismatch ({} vs. {}) '
-                              'for config key: {}').format(type(b[k]),
-                                                           type(v), k))
+            if type(b[k]) is float and type(v) is int:
+                v = float(v)
+            else:
+                if not k in ['CLASS']:
+                    raise ValueError('Type mismatch ({} vs. {}) for config key: {}'.format(
+                        type(b[k]), type(v), k))
 
         # recursively merge dicts
         if type(v) is edict:
@@ -210,7 +248,17 @@ def cfg_from_file(filename):
     """Load a config file and merge it into the default options."""
     import yaml
     with open(filename, 'r') as f:
-        yaml_cfg = edict(yaml.load(f))
+        yaml_cfg = edict(yaml.full_load(f))
+
+    if 'MODULE' in yaml_cfg and yaml_cfg.MODULE not in __C:
+        model_cfg_module = '.'.join(yaml_cfg.MODULE.split('.')[
+                                    :-1] + ['model_config'])
+        mod = importlib.import_module(model_cfg_module)
+        __C.update(mod.model_cfg)
+
+    if 'DATASET_FULL_NAME' in yaml_cfg and yaml_cfg.DATASET_FULL_NAME in yaml_cfg \
+            and yaml_cfg.DATASET_FULL_NAME not in __C:
+        __C[yaml_cfg.DATASET_FULL_NAME] = yaml_cfg[yaml_cfg.DATASET_FULL_NAME]
 
     _merge_a_into_b(yaml_cfg, __C)
 
