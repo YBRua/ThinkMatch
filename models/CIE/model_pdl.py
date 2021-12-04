@@ -7,22 +7,40 @@ from src.utils_pdl.gconv import Siamese_ChannelIndependentConv
 from models.PCA.affinity_layer import Affinity
 from src.lap_solvers_pdl.hungarian import hungarian
 
-from typing import Dict
-
 from src.utils.config import cfg
 
-import src.utils.backbone
-CNN = eval(f'src.utils.backbone.{cfg.BACKBONE}')
+import src.utils_pdl.backbone
+CNN = eval(f'src.utils_pdl.backbone.{cfg.BACKBONE}')
 
 
 class Net(CNN):
     def __init__(self):
         super(Net, self).__init__()
-        self.module_dict: Dict[str, nn.Layer] = {}
         self.sinkhorn = Sinkhorn(
-            max_iter=cfg.CIE.SK_ITER_NUM, epsilon=cfg.CIE.SK_EPSILON, tau=cfg.CIE.SK_TAU)
+            max_iter=cfg.CIE.SK_ITER_NUM,
+            epsilon=cfg.CIE.SK_EPSILON,
+            tau=cfg.CIE.SK_TAU)
         self.l2norm = nn.LocalResponseNorm(
-            cfg.CIE.FEATURE_CHANNEL * 2, alpha=cfg.CIE.FEATURE_CHANNEL * 2, beta=0.5, k=0)
+            cfg.CIE.FEATURE_CHANNEL * 2,
+            alpha=cfg.CIE.FEATURE_CHANNEL * 2,
+            beta=0.5, k=0)
+
+        # currently only the default architecture
+        # with 2 GNN layers is supported
+        # self.gnn_layer_0 = Siamese_ChannelIndependentConv(
+        #     cfg.CIE.FEATURE_CHANNEL * 2, cfg.CIE.GNN_FEAT, 1)
+        # self.gnn_layer_1 = Siamese_ChannelIndependentConv(
+        #     cfg.CIE.GNN_FEAT, cfg.CIE.GNN_FEAT, cfg.CIE.GNN_FEAT)
+
+        # self.affinity_0 = Affinity(cfg.CIE.GNN_FEAT)
+        # self.affinity_1 = Affinity(cfg.CIE.GNN_FEAT)
+
+        # self.cross_graph_0 = nn.Linear(
+        #     cfg.CIE.GNN_FEAT * 2, cfg.CIE.GNN_FEAT)
+        # self.cross_graph_edge_0 = nn.Linear(
+        #     cfg.CIE.GNN_FEAT * 2, cfg.CIE.GNN_FEAT)
+
+        # TODO: Add support for variable number of GNN layers
         self.gnn_layer = cfg.CIE.GNN_LAYER  # numbur of GNN layers
         for i in range(self.gnn_layer):
             if i == 0:
@@ -34,18 +52,17 @@ class Net(CNN):
             self.add_module('gnn_layer_{}'.format(i), gnn_layer)
             self.add_module('affinity_{}'.format(
                 i), Affinity(cfg.CIE.GNN_FEAT))
-            if i == self.gnn_layer - 2:  # only second last layer will have cross-graph module
+            # only second last layer will have cross-graph module
+            if i == self.gnn_layer - 2:
                 self.add_module('cross_graph_{}'.format(i), nn.Linear(
                     cfg.CIE.GNN_FEAT * 2, cfg.CIE.GNN_FEAT))
                 self.add_module('cross_graph_edge_{}'.format(
                     i), nn.Linear(cfg.CIE.GNN_FEAT * 2, cfg.CIE.GNN_FEAT))
+
         self.rescale = cfg.PROBLEM.RESCALE
 
-    def add_module(self, key: str, module: nn.Layer):
+    def add_module(self, key, module):
         setattr(self, key, module)
-
-    def getattr(self, key: str) -> nn.Layer:
-        return getattr(self, key)
 
     def forward(self, data_dict, **kwargs):
         if 'images' in data_dict:
@@ -102,9 +119,32 @@ class Net(CNN):
         A_tgt = paddle.bmm(G_tgt, H_tgt.transpose(1, 2))
 
         # U_src, F_src are features at different scales
-        emb1, emb2 = paddle.cat((U_src, F_src), dim=1).transpose(
-            1, 2), paddle.cat((U_tgt, F_tgt), dim=1).transpose(1, 2)
+        emb1, emb2 = paddle.concat((U_src, F_src), dim=1).transpose(
+            1, 2), paddle.concat((U_tgt, F_tgt), dim=1).transpose(1, 2)
         ss = []
+
+        # emb1, emb2, emb_edge1, emb_edge2 = self.gnn_layer_0(
+        #     [A_src, emb1, emb_edge1], [A_tgt, emb2, emb_edge2])
+
+        # s = self.affinity_0(emb1, emb2)
+        # s = self.sinkhorn(s, ns_src, ns_tgt)
+        # ss.append(s)
+
+        # new_emb1 = self.cross_graph_0(
+        #     paddle.concat((emb1, paddle.bmm(s, emb2)), dim=-1))
+        # new_emb2 = self.cross_graph_0(
+        #     paddle.concat(
+        #         (emb2, paddle.bmm(s.transpose(1, 2), emb1)), dim=-1))
+
+        # emb1 = new_emb1
+        # emb2 = new_emb2
+
+        # emb1, emb2, emb_edge1, emb_edge2 = self.gnn_layer_1(
+        #     [A_src, emb1, emb_edge1], [A_tgt, emb2, emb_edge2])
+
+        # s = self.affinity_1(emb1, emb2)
+        # s = self.sinkhorn(s, ns_src, ns_tgt)
+        # ss.append(s)
 
         for i in range(self.gnn_layer):
             gnn_layer = getattr(self, 'gnn_layer_{}'.format(i))
@@ -122,9 +162,11 @@ class Net(CNN):
             if i == self.gnn_layer - 2:
                 cross_graph = getattr(self, 'cross_graph_{}'.format(i))
                 new_emb1 = cross_graph(
-                    paddle.cat((emb1, paddle.bmm(s, emb2)), dim=-1))
+                    paddle.concat(
+                        (emb1, paddle.bmm(s, emb2)), dim=-1))
                 new_emb2 = cross_graph(
-                    paddle.cat((emb2, paddle.bmm(s.transpose(1, 2), emb1)), dim=-1))
+                    paddle.concat(
+                        (emb2, paddle.bmm(s.transpose(1, 2), emb1)), dim=-1))
                 emb1 = new_emb1
                 emb2 = new_emb2
 

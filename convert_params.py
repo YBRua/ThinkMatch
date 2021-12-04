@@ -61,7 +61,7 @@ def convert_params(model_th, model_pd, model_path):
     try:
         len(state_dict.keys()) + \
             num_batches_tracked_th == len(state_dict_th.keys())
-    except Exception as e:
+    except Exception:
         print(
             f"The number of num_batches_tracked is {num_batches_tracked_th} in pytorch model.")
         print("Exception: there are other layer parameter which not converted")
@@ -92,10 +92,10 @@ def cie_convert():
             model_torch,
             "pretrained/pretrained_params_vgg16_cie_voc.pt")
         model_path = "./pretrained/paddle_vgg16_cie_voc"
-        print(model_torch.state_dict().keys())
-        print(len(model_torch.state_dict().keys()))
-        print(model_paddle.state_dict().keys())
-        print(len(model_paddle.state_dict().keys()))
+        print('## Torch State Dict:', len(model_torch.state_dict().keys()))
+        print(*model_torch.state_dict().keys(), sep='\n')
+        print('## Paddle State Dict:', len(model_paddle.state_dict().keys()))
+        print(*model_paddle.state_dict().keys(), sep='\n')
         convert_params(model_torch, model_paddle, model_path)
 
 
@@ -107,14 +107,15 @@ def pca_convert():
     with fluid.dygraph.guard():
         model_th = tchPCA()
         model_pd = pdlPCA()
-        #load_model(model_th, "output/vgg16_pca_voc/params/params_0020.pt")
+        # load_model(model_th, "output/vgg16_pca_voc/params/params_0020.pt")
         load_model(model_th, "pretrained/pretrained_params_vgg16_pca_voc.pt")
-        #load_model(model_th , 'share_param.pt')
+        # load_model(model_th , 'share_param.pt')
         model_path = "./pretrained/new_vgg16_pca_voc"
-        print(model_th.state_dict().keys())
-        print(len(model_th.state_dict().keys()))
-        print(model_pd.state_dict().keys())
-        print(len(model_pd.state_dict().keys()))
+        print('Torch State Dict:', len(model_th.state_dict().keys()))
+        print(*model_th.state_dict().keys(), sep=' ')
+        print('Paddle State Dict:', len(model_pd.state_dict().keys()))
+        print(*model_pd.state_dict().keys(), sep=' ')
+        
         convert_params(model_th, model_pd, model_path)
 
 
@@ -127,3 +128,4 @@ if __name__ == '__main__':
         'Deep learning of graph matching training & evaluation code.')
     # pca_convert()
     cie_convert()
+    # vgg_convert()
