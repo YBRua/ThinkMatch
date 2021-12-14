@@ -149,7 +149,7 @@ __C.EVAL.CLASS = 'all'
 # VOC2011-Keypoint Dataset
 __C.VOC2011 = edict()
 __C.VOC2011.KPT_ANNO_DIR = 'data/PascalVOC/annotations/'  # keypoint annotation
-__C.VOC2011.ROOT_DIR = 'data/PascalVOC/VOC2011/'  # original VOC2011 dataset
+__C.VOC2011.ROOT_DIR = 'data/PascalVOC/PascalVOC/TrainVal/VOCdevkit/VOC2011'  # original VOC2011 dataset
 __C.VOC2011.SET_SPLIT = 'data/PascalVOC/voc2011_pairs.npz'  # set split path
 __C.VOC2011.CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow',
                        'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train',
