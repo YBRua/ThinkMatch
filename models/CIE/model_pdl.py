@@ -4,7 +4,7 @@ import paddle.nn as nn
 from src.lap_solvers_pdl.sinkhorn import Sinkhorn
 from src.utils_pdl.feature_align import feature_align
 from src.utils_pdl.gconv import Siamese_ChannelIndependentConv
-from models.PCA.affinity_layer import Affinity
+from models.PCA.affinity_layer_pdl import Affinity
 from src.lap_solvers_pdl.hungarian import hungarian
 
 from src.utils.config import cfg
