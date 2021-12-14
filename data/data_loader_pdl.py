@@ -21,8 +21,9 @@ class GMDataset(Dataset):
     def __init__(self, name, length, cls=None, **args):
         self.name = name
         self.ds = eval(self.name)(**args)
-        self.length = length  # NOTE images pairs are sampled randomly, so there is no exact definition of dataset size
-                              # length here represents the iterations between two checkpoints
+        # NOTE images pairs are sampled randomly, so there is no exact definition of dataset size
+        self.length = length
+        # length here represents the iterations between two checkpoints
         self.obj_size = self.ds.obj_resize
         self.classes = self.ds.classes
         self.cls = None if cls == 'none' else cls
@@ -43,13 +44,15 @@ class GMDataset(Dataset):
         P1_gt = np.array(P1_gt)
         P2_gt = np.array(P2_gt)
 
-        G1_gt, H1_gt, e1_gt = build_graphs(P1_gt, n1_gt, stg=cfg.GRAPH.TGT_GRAPH_CONSTRUCT)
+        G1_gt, H1_gt, e1_gt = build_graphs(
+            P1_gt, n1_gt, stg=cfg.GRAPH.TGT_GRAPH_CONSTRUCT)
         if cfg.GRAPH.TGT_GRAPH_CONSTRUCT == 'same':
             G2_gt = perm_mat.transpose().dot(G1_gt)
             H2_gt = perm_mat.transpose().dot(H1_gt)
-            e2_gt= e1_gt
+            e2_gt = e1_gt
         else:
-            G2_gt, H2_gt, e2_gt = build_graphs(P2_gt, n2_gt, stg=cfg.GRAPH.TGT_GRAPH_CONSTRUCT)
+            G2_gt, H2_gt, e2_gt = build_graphs(
+                P2_gt, n2_gt, stg=cfg.GRAPH.TGT_GRAPH_CONSTRUCT)
 
         ret_dict = {'Ps': [paddle.to_tensor(x) for x in [P1_gt, P2_gt]],
                     'ns': [paddle.to_tensor(x) for x in [n1_gt, n2_gt]],
@@ -61,15 +64,18 @@ class GMDataset(Dataset):
         imgs = [anno['image'] for anno in anno_pair]
         if imgs[0] is not None:
             trans = transforms.Compose([
-                    transforms.ToTensor(),
-                    transforms.Normalize(cfg.NORM_MEANS, cfg.NORM_STD)
-                    ])
+                transforms.ToTensor(),
+                transforms.Normalize(cfg.NORM_MEANS, cfg.NORM_STD)
+            ])
             imgs = [trans(img) for img in imgs]
             ret_dict['images'] = imgs
         elif 'feat' in anno_pair[0]['keypoints'][0]:
-            feat1 = np.stack([kp['feat'] for kp in anno_pair[0]['keypoints']], axis=-1)
-            feat2 = np.stack([kp['feat'] for kp in anno_pair[1]['keypoints']], axis=-1)
-            ret_dict['features'] = [paddle.to_tensor(x) for x in [feat1, feat2]]
+            feat1 = np.stack([kp['feat']
+                             for kp in anno_pair[0]['keypoints']], axis=-1)
+            feat2 = np.stack([kp['feat']
+                             for kp in anno_pair[1]['keypoints']], axis=-1)
+            ret_dict['features'] = [paddle.to_tensor(x) for x in [
+                feat1, feat2]]
 
         return ret_dict
 
@@ -99,17 +105,19 @@ def collate_fn(data: list):
             pad_pattern = np.zeros(2 * len(max_shape), dtype=np.int64)
             pad_pattern[::-2] = max_shape - np.array(t.shape)
             pad_pattern = pad_pattern.tolist()
-            #print('pad_pattern is', pad_pattern)
+            # print('pad_pattern is', pad_pattern)
             if (len(pad_pattern) == 2):
-                tt = t.reshape((1,1,t.shape[0]))
-                padded_ts.append(F.pad(tt, pad_pattern, 'constant', 0, 'NCL').squeeze())
+                tt = t.reshape((1, 1, t.shape[0]))
+                padded_ts.append(
+                    F.pad(tt, pad_pattern, 'constant', 0, 'NCL').squeeze())
             elif len(pad_pattern) == 4:
-                tt = t.reshape((1,1,t.shape[0],-1))
+                tt = t.reshape((1, 1, t.shape[0], -1))
                 tt = F.pad(tt, pad_pattern, 'constant', 0, 'NCHW')
-                padded_ts.append(tt.reshape((1,tt.shape[2],-1)).squeeze())
+                padded_ts.append(tt.reshape((1, tt.shape[2], -1)).squeeze())
             elif len(pad_pattern) == 6:
-                tt = t.reshape((1,1,t.shape[0],t.shape[1],-1))
-                padded_ts.append(F.pad(tt, pad_pattern, 'constant', 0, data_format='NCDHW').squeeze())
+                tt = t.reshape((1, 1, t.shape[0], t.shape[1], -1))
+                padded_ts.append(
+                    F.pad(tt, pad_pattern, 'constant', 0, data_format='NCDHW').squeeze())
 
         return padded_ts
 
@@ -150,12 +158,15 @@ def collate_fn(data: list):
             G1_gt, G2_gt = ret['Gs']
             H1_gt, H2_gt = ret['Hs']
             sparse_dtype = np.float32
-            K1G = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(G2_gt, G1_gt)]  # 1 as source graph, 2 as target graph
-            K1H = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
+            K1G = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
+                sparse_dtype) for x, y in zip(G2_gt, G1_gt)]  # 1 as source graph, 2 as target graph
+            K1H = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
+                sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
             K1G = CSRMatrix3d(K1G)
             K1H = CSRMatrix3d(K1H).transpose()
 
-            ret['Ks'] = K1G, K1H #, K1G.transpose(keep_type=True), K1H.transpose(keep_type=True)
+            # , K1G.transpose(keep_type=True), K1H.transpose(keep_type=True)
+            ret['Ks'] = K1G, K1H
         except ValueError:
             pass
 
@@ -180,8 +191,8 @@ def worker_init_rand(worker_id):
 
 
 def get_dataloader(dataset, fix_seed=True, shuffle=False) -> DataLoader:
-    fix_seed = True #"Paddle version now do NOT support unfixed seed"
+    fix_seed = True  # "Paddle version now do NOT support unfixed seed"
     return paddle.io.DataLoader(
         dataset, batch_size=cfg.BATCH_SIZE, shuffle=shuffle, num_workers=cfg.DATALOADER_NUM, collate_fn=collate_fn,
-         worker_init_fn=worker_init_fix if fix_seed else worker_init_rand
+        worker_init_fn=worker_init_fix if fix_seed else worker_init_rand
     )

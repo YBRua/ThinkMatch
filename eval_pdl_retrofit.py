@@ -81,7 +81,7 @@ def eval_model(
         prediction_cls = []
 
         for inputs in dataloaders[i]:
-            if iter_num >= cfg.EVAL.SAMPLE / inputs['batch_size']:
+            if iter_num >= cfg.EVAL.SAMPLES / inputs['batch_size']:
                 break
 
             batch_size = inputs['batch_size']
