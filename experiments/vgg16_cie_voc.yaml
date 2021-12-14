@@ -12,7 +12,7 @@ DATALOADER_NUM: 2
 
 RANDOM_SEED: 123
 
-PRETRAINED_PATH: /pretrained/paddle_vgg16_cie_voc.pdparams
+PRETRAINED_PATH: ./pretrained/paddle_vgg16_cie_voc.pdparams
 
 # available GPU ids
 GPUS:
