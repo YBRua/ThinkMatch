@@ -11,8 +11,8 @@ from data.willow_obj import WillowObject
 from src.utils_pdl.build_graphs import build_graphs
 # Now only implement PCA
 # so following files are useless, in theory
-# from src.utils_pdl.fgm import kronecker_sparse
-# from src.sparse_torch import CSRMatrix3d
+from src.utils_pdl.fgm import kronecker_sparse
+from src.sparse_torch import CSRMatrix3d
 
 from src.utils.config import cfg
 
