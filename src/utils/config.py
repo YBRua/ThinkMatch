@@ -144,6 +144,26 @@ __C.EVAL.SAMPLES = 1000
 __C.EVAL.CLASS = 'all'
 
 #
+# Datasets
+#
+# VOC2011-Keypoint Dataset
+__C.VOC2011 = edict()
+__C.VOC2011.KPT_ANNO_DIR = 'data/PascalVOC/annotations/'  # keypoint annotation
+__C.VOC2011.ROOT_DIR = 'data/PascalVOC/VOC2011/'  # original VOC2011 dataset
+__C.VOC2011.SET_SPLIT = 'data/PascalVOC/voc2011_pairs.npz'  # set split path
+__C.VOC2011.CLASSES = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat', 'chair', 'cow',
+                       'diningtable', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train',
+                       'tvmonitor']
+
+# Willow-Object Dataset
+__C.WILLOW = edict()
+__C.WILLOW.ROOT_DIR = 'data/WILLOW-ObjectClass'
+__C.WILLOW.CLASSES = ['Car', 'Duck', 'Face', 'Motorbike', 'Winebottle']
+__C.WILLOW.KPT_LEN = 10
+__C.WILLOW.TRAIN_NUM = 20
+__C.WILLOW.TRAIN_OFFSET = 0
+
+#
 # MISC
 #
 

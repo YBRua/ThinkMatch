@@ -8,7 +8,7 @@ from pathlib import Path
 from src.utils.timer import Timer
 import src.utils_pdl.evaluation_metric as metric
 
-from data.data_loader_pdl import get_dataloader
+from data.data_loader_pdl import GMDataset, get_dataloader
 from src.utils_pdl.model_sl import load_model
 # TODO: Support for dataparallel
 from typing import List
@@ -38,10 +38,10 @@ def eval_model(
     dataloaders: List[DataLoader] = []
 
     for cls in classes:
-        image_dataset = Benchmark(
+        image_dataset = GMDataset(
             name=cfg.DATASET_FULL_NAME,
-            bm=bm,
-            problem=cfg.PROBLEM.TYPE,
+            # bm=bm,
+            # problem=cfg.PROBLEM.TYPE,  # only 2GM is supported
             length=cfg.EVAL.SAMPLES,
             cls=cls,
             using_all_graphs=cfg.PROBLEM.TEST_ALL_GRAPHS)

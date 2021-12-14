@@ -4,8 +4,6 @@ import numpy as np
 import xml.etree.ElementTree as ET
 import random
 import pickle
-import torch
-import sys
 
 from src.utils.config import cfg
 
