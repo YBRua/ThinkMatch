@@ -55,7 +55,7 @@ def build_graphs(P_np: np.ndarray, n: int, n_pad: int=None, edge_pad: int=None, 
                 H[j, edge_idx] = 1
                 edge_idx += 1
 
-    return G, H, edge_num
+    return A, G, H, edge_num
 
 
 def delaunay_triangulate(P: np.ndarray):
