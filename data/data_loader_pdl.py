@@ -18,8 +18,9 @@ from src.utils.config import cfg
 
 
 class GMDataset(Dataset):
-    def __init__(self, name, length, cls=None, **args):
+    def __init__(self, name, bm, length, cls=None, **args):
         self.name = name
+        self.bm = bm
         self.ds = eval(self.name)(**args)
         # NOTE images pairs are sampled randomly, so there is no exact definition of dataset size
         self.length = length
@@ -28,44 +29,71 @@ class GMDataset(Dataset):
         self.classes = self.ds.classes
         self.cls = None if cls == 'none' else cls
 
+        if self.cls is None:
+            self.classes = self.bm.classes
+        else:
+            self.classes = [self.cls]
+
+        self.problem_type = '2GM'
+        self.img_num_list = self.bm.compute_img_num(self.classes)
+
+        self.id_combination, self.length = self.bm.get_id_combination(self.cls)
+        self.length_list = []
+        for cls in self.classes:
+            cls_length = self.bm.compute_length(cls)
+            self.length_list.append(cls_length)
+
     def __len__(self):
         return self.length
 
     def __getitem__(self, idx):
-        anno_pair, perm_mat = self.ds.get_pair(self.cls)
-        if perm_mat.size <= 2 * 2:
-            return self.__getitem__(idx)
+        cls_num = random.randrange(0, len(self.classes))
+        ids = list(self.id_combination[cls_num]
+                   [idx % self.length_list[cls_num]])
+        anno_pair, perm_mat_, id_list = self.bm.get_data(ids)
+        perm_mat = perm_mat_[(0, 1)].toarray()
+        while min(perm_mat.shape[0], perm_mat.shape[1]) <= 2 or perm_mat.size >= cfg.PROBLEM.MAX_PROB_SIZE > 0:
+            anno_pair, perm_mat_, id_list = self.bm.rand_get_data(self.cls)
+            perm_mat = perm_mat_[(0, 1)].toarray()
 
         cls = [anno['cls'] for anno in anno_pair]
-        P1_gt = [(kp['x'], kp['y']) for kp in anno_pair[0]['keypoints']]
-        P2_gt = [(kp['x'], kp['y']) for kp in anno_pair[1]['keypoints']]
+        P1 = [(kp['x'], kp['y']) for kp in anno_pair[0]['kpts']]
+        P2 = [(kp['x'], kp['y']) for kp in anno_pair[1]['kpts']]
 
-        n1_gt, n2_gt = len(P1_gt), len(P2_gt)
-        # univ_size = [anno['univ_size'] for anno in anno_pair]
+        n1, n2 = len(P1), len(P2)
+        univ_size = [anno['univ_size'] for anno in anno_pair]
 
-        P1_gt = np.array(P1_gt)
-        P2_gt = np.array(P2_gt)
+        P1 = np.array(P1)
+        P2 = np.array(P2)
 
-        G1_gt, H1_gt, e1_gt = build_graphs(
-            P1_gt, n1_gt, stg=cfg.GRAPH.TGT_GRAPH_CONSTRUCT)
+        A1, G1, H1, e1 = build_graphs(
+            P1, n1, stg=cfg.GRAPH.SRC_GRAPH_CONSTRUCT, sym=cfg.GRAPH.SYM_ADJACENCY)
         if cfg.GRAPH.TGT_GRAPH_CONSTRUCT == 'same':
-            G2_gt = perm_mat.transpose().dot(G1_gt)
-            H2_gt = perm_mat.transpose().dot(H1_gt)
-            e2_gt = e1_gt
+            G2 = perm_mat.transpose().dot(G1)
+            H2 = perm_mat.transpose().dot(H1)
+            A2 = G2.dot(H2.transpose())
+            e2 = e1
         else:
-            G2_gt, H2_gt, e2_gt = build_graphs(
-                P2_gt, n2_gt, stg=cfg.GRAPH.TGT_GRAPH_CONSTRUCT)
+            A2, G2, H2, e2 = build_graphs(
+                P2, n2, stg=cfg.GRAPH.TGT_GRAPH_CONSTRUCT, sym=cfg.GRAPH.SYM_ADJACENCY)
 
-        ret_dict = {'Ps': [paddle.to_tensor(x) for x in [P1_gt, P2_gt]],
-                    'ns': [paddle.to_tensor(x) for x in [n1_gt, n2_gt]],
-                    'es': [paddle.to_tensor(x) for x in [e1_gt, e2_gt]],
+        # pyg_graph1 = self.to_pyg_graph(A1, P1)
+        # pyg_graph2 = self.to_pyg_graph(A2, P2)
+
+        ret_dict = {'Ps': [paddle.to_tensor(x) for x in [P1, P2]],
+                    'ns': [paddle.to_tensor(x) for x in [n1, n2]],
+                    'es': [paddle.to_tensor(x) for x in [e1, e2]],
                     'gt_perm_mat': perm_mat,
-                    'Gs': [paddle.to_tensor(x) for x in [G1_gt, G2_gt]],
-                    'Hs': [paddle.to_tensor(x) for x in [H1_gt, H2_gt]],
-                    'cls': [str(x) for x in cls]
+                    'Gs': [paddle.to_tensor(x) for x in [G1, G2]],
+                    'Hs': [paddle.to_tensor(x) for x in [H1, H2]],
+                    'As': [paddle.to_tensor(x) for x in [A1, A2]],
+                    # 'pyg_graphs': [pyg_graph1, pyg_graph2],
+                    'cls': [str(x) for x in cls],
+                    'id_list': id_list,
+                    'univ_size': [paddle.to_tensor(int(x)) for x in univ_size],
                     }
 
-        imgs = [anno['image'] for anno in anno_pair]
+        imgs = [anno['img'] for anno in anno_pair]
         if imgs[0] is not None:
             trans = transforms.Compose([
                 transforms.ToTensor(),
@@ -73,13 +101,12 @@ class GMDataset(Dataset):
             ])
             imgs = [trans(img) for img in imgs]
             ret_dict['images'] = imgs
-        elif 'feat' in anno_pair[0]['keypoints'][0]:
+        elif 'feat' in anno_pair[0]['kpts'][0]:
             feat1 = np.stack([kp['feat']
-                             for kp in anno_pair[0]['keypoints']], axis=-1)
+                             for kp in anno_pair[0]['kpts']], axis=-1)
             feat2 = np.stack([kp['feat']
-                             for kp in anno_pair[1]['keypoints']], axis=-1)
-            ret_dict['features'] = [paddle.to_tensor(x) for x in [
-                feat1, feat2]]
+                             for kp in anno_pair[1]['kpts']], axis=-1)
+            ret_dict['features'] = [paddle.to_tensor(x) for x in [feat1, feat2]]
 
         return ret_dict
 
