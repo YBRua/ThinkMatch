@@ -47,7 +47,7 @@ def eval_model(
             using_all_graphs=cfg.PROBLEM.TEST_ALL_GRAPHS)
         paddle.seed(cfg.RANDOM_SEED)
 
-        dataloader = get_dataloader(image_dataset, shuffle=True)
+        dataloader = get_dataloader(image_dataset)
         dataloaders.append(dataloader)
 
     recalls = []

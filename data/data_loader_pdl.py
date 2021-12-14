@@ -6,8 +6,8 @@ from paddle.io import Dataset, DataLoader
 from paddle.vision import transforms
 import numpy as np
 import random
-from data.pascal_voc import PascalVOC
-from data.willow_obj import WillowObject
+# from data.pascal_voc import PascalVOC
+# from data.willow_obj import WillowObject
 from src.utils_pdl.build_graphs import build_graphs
 # Now only implement PCA
 # so following files are useless, in theory
