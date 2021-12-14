@@ -92,4 +92,4 @@ def format_metric(ms) -> str:
     :param ms: tensor containing metric
     :return: a formatted string containing mean and variance
     """
-    return '{:.4f}±{:.4f}'.format(paddle.mean(ms), paddle.std(ms))
+    return '{:.4f}±{:.4f}'.format(paddle.mean(ms).item(), paddle.std(ms).item())
