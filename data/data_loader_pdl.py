@@ -43,13 +43,13 @@ class GMDataset(Dataset):
         P1_gt = np.array(P1_gt)
         P2_gt = np.array(P2_gt)
 
-        G1_gt, H1_gt, e1_gt = build_graphs(P1_gt, n1_gt, stg=cfg.PAIR.GT_GRAPH_CONSTRUCT)
-        if cfg.PAIR.REF_GRAPH_CONSTRUCT == 'same':
+        G1_gt, H1_gt, e1_gt = build_graphs(P1_gt, n1_gt, stg=cfg.GRAPH.TGT_GRAPH_CONSTRUCT)
+        if cfg.GRAPH.TGT_GRAPH_CONSTRUCT == 'same':
             G2_gt = perm_mat.transpose().dot(G1_gt)
             H2_gt = perm_mat.transpose().dot(H1_gt)
             e2_gt= e1_gt
         else:
-            G2_gt, H2_gt, e2_gt = build_graphs(P2_gt, n2_gt, stg=cfg.PAIR.REF_GRAPH_CONSTRUCT)
+            G2_gt, H2_gt, e2_gt = build_graphs(P2_gt, n2_gt, stg=cfg.GRAPH.TGT_GRAPH_CONSTRUCT)
 
         ret_dict = {'Ps': [paddle.to_tensor(x) for x in [P1_gt, P2_gt]],
                     'ns': [paddle.to_tensor(x) for x in [n1_gt, n2_gt]],
