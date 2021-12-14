@@ -41,7 +41,7 @@ class GMDataset(Dataset):
         P2_gt = [(kp['x'], kp['y']) for kp in anno_pair[1]['keypoints']]
 
         n1_gt, n2_gt = len(P1_gt), len(P2_gt)
-        univ_size = [anno['univ_size'] for anno in anno_pair]
+        # univ_size = [anno['univ_size'] for anno in anno_pair]
 
         P1_gt = np.array(P1_gt)
         P2_gt = np.array(P2_gt)
@@ -62,8 +62,8 @@ class GMDataset(Dataset):
                     'gt_perm_mat': perm_mat,
                     'Gs': [paddle.to_tensor(x) for x in [G1_gt, G2_gt]],
                     'Hs': [paddle.to_tensor(x) for x in [H1_gt, H2_gt]],
-                    'cls': [str(x) for x in cls],
-                    'univ_size': [paddle.to_tensor(int(x)) for x in univ_size]}
+                    'cls': [str(x) for x in cls]
+                    }
 
         imgs = [anno['image'] for anno in anno_pair]
         if imgs[0] is not None:
