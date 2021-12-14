@@ -40,6 +40,7 @@ def eval_model(
     for cls in classes:
         image_dataset = GMDataset(
             name=cfg.DATASET_FULL_NAME,
+            bm=bm,
             # problem=cfg.PROBLEM.TYPE,  # only 2GM is supported
             length=cfg.EVAL.SAMPLES,
             cls=cls,
