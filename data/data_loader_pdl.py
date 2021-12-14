@@ -63,7 +63,7 @@ class GMDataset(Dataset):
                     'Gs': [paddle.to_tensor(x) for x in [G1_gt, G2_gt]],
                     'Hs': [paddle.to_tensor(x) for x in [H1_gt, H2_gt]],
                     'cls': [str(x) for x in cls],
-                    'univ_size': [paddle.to_tensor(int(x)) for x in univ_size],}
+                    'univ_size': [paddle.to_tensor(int(x)) for x in univ_size]}
 
         imgs = [anno['image'] for anno in anno_pair]
         if imgs[0] is not None:
@@ -175,7 +175,7 @@ def collate_fn(data: list):
             pass
 
     ret['batch_size'] = len(data)
-    ret['univ_size'] = paddle.to_tensor([max(*[item[b] for item in ret['univ_size']]) for b in range(ret['batch_size'])])
+    # ret['univ_size'] = paddle.to_tensor([max(*[item[b] for item in ret['univ_size']]) for b in range(ret['batch_size'])])
 
     for v in ret.values():
         if type(v) is list:
