@@ -3,7 +3,7 @@ DATASET_NAME: voc
 
 DATASET_FULL_NAME: PascalVOC
 
-MODULE: models.CIE.model
+MODULE: models.CIE.model_pdl
 
 BACKBONE: VGG16_bn
 
