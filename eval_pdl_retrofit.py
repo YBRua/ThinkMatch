@@ -75,7 +75,7 @@ def eval_model(
 
         pred_time_list = []
         obj_total_num = paddle.zeros((1,))
-        cluster_acc_list = []
+        # cluster_acc_list = []
         # cluster_purity_list = []  # not used in 2GM
         # cluster_ri_list = []  # not used in 2GM
         prediction_cls = []
@@ -129,7 +129,7 @@ def eval_model(
                 running_start = time.time()
 
         objs[i] = objs[i] / obj_total_num
-        pred_time.append(paddle.concat(cluster_acc_list))
+        pred_time.append(paddle.concat(pred_time_list))
 
         if verbose:
             bm.eval_cls(prediction_cls, cls, verbose=verbose)
