@@ -208,7 +208,7 @@ if __name__ == '__main__':
     device = 'gpu:0'
 
     model = Net()
-    model = model.to(device)
+    # model = model.to(device)
     # TODO: Add support for DataParallel
     # eliphatfs: Dont add it. Nobody uses it.
 
