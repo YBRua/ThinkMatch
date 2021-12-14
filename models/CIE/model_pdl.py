@@ -104,9 +104,9 @@ class Net(CNN):
             raise ValueError('Unknown data type for this model.')
 
         P_src_dis = (P_src.unsqueeze(1) - P_src.unsqueeze(2))
-        P_src_dis = paddle.norm(P_src_dis, p=2, dim=3).detach()
+        P_src_dis = paddle.norm(P_src_dis, p=2, axis=3).detach()
         P_tgt_dis = (P_tgt.unsqueeze(1) - P_tgt.unsqueeze(2))
-        P_tgt_dis = paddle.norm(P_tgt_dis, p=2, dim=3).detach()
+        P_tgt_dis = paddle.norm(P_tgt_dis, p=2, axis=3).detach()
 
         Q_src = paddle.exp(-P_src_dis / self.rescale[0])
         Q_tgt = paddle.exp(-P_tgt_dis / self.rescale[0])
@@ -119,8 +119,8 @@ class Net(CNN):
         A_tgt = paddle.bmm(G_tgt, H_tgt.transpose(1, 2))
 
         # U_src, F_src are features at different scales
-        emb1, emb2 = paddle.concat((U_src, F_src), dim=1).transpose(
-            1, 2), paddle.concat((U_tgt, F_tgt), dim=1).transpose(1, 2)
+        emb1, emb2 = paddle.concat((U_src, F_src), axis=1).transpose(
+            1, 2), paddle.concat((U_tgt, F_tgt), axis=1).transpose(1, 2)
         ss = []
 
         # emb1, emb2, emb_edge1, emb_edge2 = self.gnn_layer_0(
@@ -163,10 +163,10 @@ class Net(CNN):
                 cross_graph = getattr(self, 'cross_graph_{}'.format(i))
                 new_emb1 = cross_graph(
                     paddle.concat(
-                        (emb1, paddle.bmm(s, emb2)), dim=-1))
+                        (emb1, paddle.bmm(s, emb2)), axis=-1))
                 new_emb2 = cross_graph(
                     paddle.concat(
-                        (emb2, paddle.bmm(s.transpose(1, 2), emb1)), dim=-1))
+                        (emb2, paddle.bmm(s.transpose(1, 2), emb1)), axis=-1))
                 emb1 = new_emb1
                 emb2 = new_emb2
 
