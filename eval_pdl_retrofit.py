@@ -135,7 +135,7 @@ def eval_model(
         if verbose:
             bm.eval_cls(prediction_cls, cls, verbose=verbose)
             print(
-                f'Class {cls} norm obj score: {objs[i]:.4f}')
+                f'Class {cls} norm obj score: {objs[i].item():.4f}')
             print(
                 f'Class {cls} pred time: {metric.format_metric(pred_time[i])}')
 
