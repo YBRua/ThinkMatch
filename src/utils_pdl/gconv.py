@@ -81,9 +81,9 @@ class ChannelIndependentConv(nn.Layer):
             A = A.unsqueeze(-1)
             A = paddle.multiply(A.expand_as(edge_x), edge_x)
 
-            node_x = paddle.matmul(A.transpose(2, 3).transpose(1, 2),
-                                   node_x.unsqueeze(2).transpose(2, 3).transpose(1, 2))
-            node_x = node_x.squeeze(-1).transpose(1, 2)
+            node_x = paddle.matmul(A.transpose((0, 1, 3, 2)).transpose((0, 2, 1)),
+                                   node_x.unsqueeze(2).transpose((0, 1, 3, 2)).transpose((0, 2, 1)))
+            node_x = node_x.squeeze(-1).transpose((0, 2, 1))
             node_x = F.relu(node_x) + F.relu(node_sx)
             edge_x = F.relu(edge_x)
 
@@ -101,9 +101,9 @@ class ChannelIndependentConv(nn.Layer):
             A = A.unsqueeze(-1)
             A = paddle.multiply(A.expand_as(edge_x), edge_x)
 
-            node_x = paddle.matmul(A.transpose(2, 3).transpose(1, 2),
-                                   node_x.unsqueeze(2).transpose(2, 3).transpose(1, 2))
-            node_x = node_x.squeeze(-1).transpose(1, 2)
+            node_x = paddle.matmul(A.transpose((0, 1, 3, 2)).transpose((0, 2, 1)),
+                                   node_x.unsqueeze(2).transpose((0, 1, 3, 2)).transpose((0, 2, 1)))
+            node_x = node_x.squeeze(-1).transpose((0, 2, 1))
             node_x = F.relu(node_x) + F.relu(node_sx)
             edge_x = F.relu(edge_x)
             return node_x, edge_x
