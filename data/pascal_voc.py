@@ -4,12 +4,13 @@ import numpy as np
 import xml.etree.ElementTree as ET
 import random
 import pickle
+import os
 
 from src.utils.config import cfg
 
 anno_path = cfg.VOC2011.KPT_ANNO_DIR
-img_path = cfg.VOC2011.ROOT_DIR + 'JPEGImages'
-ori_anno_path = cfg.VOC2011.ROOT_DIR + 'Annotations'
+img_path = os.path.join(cfg.VOC2011.ROOT_DIR, 'JPEGImages')
+ori_anno_path = os.path.join(cfg.VOC2011.ROOT_DIR, 'Annotations')
 set_path = cfg.VOC2011.SET_SPLIT
 cache_path = cfg.CACHE_PATH
 
