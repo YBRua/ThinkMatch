@@ -105,8 +105,8 @@ def eval_model(
                     b, :outputs['ns'][0][b], :outputs['ns'][1][b]]
                 perm_mat = perm_mat.numpy()
                 eval_dict = dict()
-                id_pair = inputs['id_list'][0][b], inputs['id_list'][1][b]
-                eval_dict['ids'] = id_pair
+                # id_pair = inputs['id_list'][0][b], inputs['id_list'][1][b]
+                # eval_dict['ids'] = id_pair
                 eval_dict['cls'] = cls
                 eval_dict['perm_mat'] = perm_mat
                 prediction.append(eval_dict)
