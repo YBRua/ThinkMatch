@@ -225,8 +225,8 @@ if __name__ == '__main__':
         #     model_path = str(
         #         Path(cfg.OUTPUT_PATH) / 'params' / 'params_{:04}.pt'
         #         .format(cfg.EVAL.EPOCH))
-        # if len(cfg.PRETRAINED_PATH) > 0:
-        #     model_path = cfg.PRETRAINED_PATH
+        if len(cfg.PRETRAINED_PATH) > 0:
+            model_path = cfg.PRETRAINED_PATH
         if len(model_path) > 0:
             print('Loading model parameters from {}'.format(model_path))
             load_model(model, model_path)
