@@ -170,6 +170,14 @@ def collate_fn(data: list):
         except ValueError:
             pass
 
+    ret['batch_size'] = len(data)
+    ret['univ_size'] = paddle.to_tensor([max(*[item[b] for item in ret['univ_size']]) for b in range(ret['batch_size'])])
+
+    for v in ret.values():
+        if type(v) is list:
+            ret['num_graphs'] = len(v)
+            break
+
     return ret
 
 
