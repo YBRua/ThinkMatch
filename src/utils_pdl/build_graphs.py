@@ -7,7 +7,7 @@ import itertools
 import numpy as np
 from .pdl_device_trans import place2int
 
-def build_graphs(P_np: np.ndarray, n: int, n_pad: int=None, edge_pad: int=None, stg: str='fc'):
+def build_graphs(P_np: np.ndarray, n: int, n_pad: int=None, edge_pad: int=None, stg: str='fc', sym: bool=True):
     """
     Build graph matrix G,H from point set P. This function supports only cpu operations in numpy.
     G, H is constructed from adjacency matrix A: A = G * H^T
@@ -45,7 +45,11 @@ def build_graphs(P_np: np.ndarray, n: int, n_pad: int=None, edge_pad: int=None, 
     H = np.zeros((n_pad, edge_pad), dtype=np.float32)
     edge_idx = 0
     for i in range(n):
-        for j in range(n):
+        if sym:
+            range_j = range(n)
+        else:
+            range_j = range(i, n)
+        for j in range_j:
             if A[i, j] == 1:
                 G[i, edge_idx] = 1
                 H[j, edge_idx] = 1
