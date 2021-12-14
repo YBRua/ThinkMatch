@@ -67,11 +67,11 @@ class Net(CNN):
     def forward(self, data_dict, **kwargs):
         if 'images' in data_dict:
             # real image data
-            src, tgt = data_dict['images']
-            P_src, P_tgt = data_dict['Ps']
-            ns_src, ns_tgt = data_dict['ns']
-            G_src, G_tgt = data_dict['Gs']
-            H_src, H_tgt = data_dict['Hs']
+            src, tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['images']]
+            P_src, P_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['Ps']]
+            ns_src, ns_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['ns']]
+            G_src, G_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['Gs']]
+            H_src, H_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['Hs']]
             # extract feature
             src_node = self.node_layers(src)
             src_edge = self.edge_layers(src_node)
@@ -91,10 +91,10 @@ class Net(CNN):
             F_tgt = feature_align(tgt_edge, P_tgt, ns_tgt, self.rescale)
         elif 'features' in data_dict:
             # synthetic data
-            src, tgt = data_dict['features']
-            ns_src, ns_tgt = data_dict['ns']
-            G_src, G_tgt = data_dict['Gs']
-            H_src, H_tgt = data_dict['Hs']
+            src, tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['features']]
+            ns_src, ns_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['ns']]
+            G_src, G_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['Gs']]
+            H_src, H_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['Hs']]
 
             U_src = src[:, :src.shape[1] // 2, :]
             F_src = src[:, src.shape[1] // 2:, :]
