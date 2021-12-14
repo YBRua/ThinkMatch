@@ -74,7 +74,7 @@ def eval_model(
         iter_num = 0
 
         pred_time_list = []
-        obj_total_num = paddle.zeros(1)
+        obj_total_num = paddle.zeros((1,))
         cluster_acc_list = []
         # cluster_purity_list = []  # not used in 2GM
         # cluster_ri_list = []  # not used in 2GM
