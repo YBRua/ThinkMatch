@@ -32,6 +32,8 @@ class ResCls(nn.Layer):
 
 
 def my_align(raw_feature, P, ori_size: tuple):
+    print(raw_feature.dtype)
+    print(P.dtype)
     return F.grid_sample(
         raw_feature,
         2 * P.unsqueeze(-2) / ori_size[0] - 1,
