@@ -9,6 +9,8 @@ from models.PCA.model import Net as tchPCA
 from models.PCA.model_pdl import Net as pdlPCA
 from models.CIE.model import Net as TorchCIE
 from models.CIE.model_pdl import Net as PaddleCIE
+from models.IGM.model import Net as TorchIGM
+from models.IGM.model_pdl import Net as PaddleIGM
 from src.utils.model_sl import load_model
 
 from src.utils.config import cfg
@@ -48,6 +50,7 @@ def convert_params(model_th, model_pd, model_path):
             key_th = key_pd.replace("_variance", "running_var")
 
         if "fc" in key_th or "classifier":
+        # if "fc" in key_th:
             if len(state_dict_pd[key_pd].shape) < 4:
                 state_dict[key_pd] = state_dict_th[key_th].numpy().astype(
                     "float32").transpose()
@@ -83,6 +86,18 @@ def vgg_convert(paddle_param_path):
         print(model_pd.state_dict().keys())
         print(len(model_pd.state_dict().keys()))
         convert_params(model_th, model_pd, model_path)
+
+
+def igm_convert(torch_param_path, paddle_param_path):
+    with fluid.dygraph.guard():
+        model_torch = TorchIGM()
+        model_paddle = PaddleIGM()
+        load_model(model_torch, torch_param_path)
+        print('## Torch State Dict:', len(model_torch.state_dict().keys()))
+        print(*model_torch.state_dict().keys(), sep='\n')
+        print('## Paddle State Dict:', len(model_paddle.state_dict().keys()))
+        print(*model_paddle.state_dict().keys(), sep='\n')
+        convert_params(model_torch, model_paddle, paddle_param_path)
 
 
 def cie_convert(torch_param_path, paddle_param_path):
@@ -134,9 +149,13 @@ if __name__ == '__main__':
         print('Default to `./paddle_model.pdparams`')
         OUTPUT_PATH = './paddle_model.pdparams'
 
-    if 'CIE' in ARCH:
+    elif 'CIE' in ARCH:
         cie_convert(INPUT_PATH, OUTPUT_PATH)
-    if 'PCA' in ARCH:
+    elif 'PCA' in ARCH:
         pca_convert(INPUT_PATH, OUTPUT_PATH)
-    if 'VGG16BN' in ARCH:
+    elif 'VGG16BN' in ARCH:
         vgg_convert(OUTPUT_PATH)
+    elif 'IGM' in ARCH:
+        igm_convert(INPUT_PATH, OUTPUT_PATH)
+    else:
+        raise ValueError(f'? {ARCH}')
