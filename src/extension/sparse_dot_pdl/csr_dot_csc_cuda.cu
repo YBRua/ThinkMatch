@@ -52,33 +52,34 @@ __global__ void csr_dot_csc_cuda_kernel(
 }
 
 
-at::Tensor csr_dot_csc_cuda(
-    at::Tensor t1_indices,
-    at::Tensor t1_indptr,
-    at::Tensor t1_data,
-    at::Tensor t2_indices,
-    at::Tensor t2_indptr,
-    at::Tensor t2_data,
+std::vector<paddle::Tensor> csr_dot_csc_cuda(
+    const paddle::Tensor &t1_indices,
+    const paddle::Tensor &t1_indptr,
+    const paddle::Tensor &t1_data,
+    const paddle::Tensor &t2_indices,
+    const paddle::Tensor &t2_indptr,
+    const paddle::Tensor &t2_data,
     int64_t batch_size,
     int64_t out_h,
     int64_t out_w
 ){
-    auto out_dense = at::zeros({batch_size, out_h, out_w}, t1_data.type());
+    std::vector<int64_t> shape = {batch_size, out_h, out_w};
+    auto out_dense = paddle::Tensor(t1_indices.place(), shape);
 
-    const int threads = 1024;
-    const dim3 blocks((out_h * out_w + threads - 1) / threads, batch_size);
+    const int block = 1024;
+    const dim3 grid((out_h * out_w + block - 1) / block, batch_size);
 
-    AT_DISPATCH_FLOATING_TYPES_AND_HALF(t1_data.type(), "csr_dot_csc_cuda", ([&] {
-    csr_dot_csc_cuda_kernel<scalar_t><<<blocks, threads>>>(
+    PD_DISPATCH_FLOATING_AND_HALF_TYPES(t1_data.type(), "csr_dot_csc_cuda", ([&] {
+    csr_dot_csc_cuda_kernel<scalar_t><<<grid, block>>>(
         t1_indices.data<int64_t>(),
         t1_indptr.data<int64_t>(),
         t1_data.data<scalar_t>(),
         t2_indices.data<int64_t>(),
         t2_indptr.data<int64_t>(),
         t2_data.data<scalar_t>(),
-        out_dense.data<scalar_t>(),
+        out_dense.mutable_data<scalar_t>(),
         out_h,
         out_w);
     }));
-    return out_dense;
+    return {out_dense};
 }

@@ -1,8 +1,4 @@
-#include <ATen/ATen.h>
-
-#include <cuda.h>
-#include <cuda_runtime.h>
-
+#include "paddle/extension.h"
 #include <iostream>
 
 
@@ -35,28 +31,28 @@ __global__ void csr_dot_diag_cuda_kernel(
 
 
 std::vector<at::Tensor> csr_dot_diag_cuda(
-    at::Tensor t1_indices,
-    at::Tensor t1_indptr,
-    at::Tensor t1_data,
-    at::Tensor t2,
+    const paddle::Tensor &t1_indices,
+    const paddle::Tensor &t1_indptr,
+    const paddle::Tensor &t1_data,
+    const paddle::Tensor &t2,
     int64_t batch_size,
     int64_t out_h,
     int64_t out_w
 ){
-    auto outp_indices = at::clone(t1_indices);
-    auto outp_indptr = at::clone(t1_indptr);
-    auto outp_data = at::zeros_like(t1_data);
+    auto outp_indices = paddle::Tensor(t1_indices);
+    auto outp_indptr = paddle::Tensor(t1_indptr);
+    auto outp_data = paddle::Tensor(t1_data.place(), t1_data.shape());
 
-    const int threads = 1024;
-    const dim3 blocks((out_h + threads - 1) / threads, batch_size);
+    const int block = 1024;
+    const dim3 grid((out_h + block - 1) / block, batch_size);
 
-    AT_DISPATCH_FLOATING_TYPES_AND_HALF(t1_data.type(), "csr_dot_diag_cuda", ([&] {
-    csr_dot_diag_cuda_kernel<scalar_t><<<blocks, threads>>>(
+    PD_DISPATCH_FLOATING_AND_HALF_TYPES(t1_data.type(), "csr_dot_diag_cuda", ([&] {
+    csr_dot_diag_cuda_kernel<scalar_t><<<grid, block>>>(
         t1_indices.data<int64_t>(),
         t1_indptr.data<int64_t>(),
         t1_data.data<scalar_t>(),
         t2.data<scalar_t>(),
-        outp_data.data<scalar_t>(),
+        outp_data.mutable_data<scalar_t>(),
         out_h,
         out_w);
     }));
