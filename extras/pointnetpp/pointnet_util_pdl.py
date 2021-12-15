@@ -56,7 +56,9 @@ def index_points(points, idx):
     repeat_shape[0] = 1
     batch_indices = paddle.arange(B, dtype='int64').reshape(
         view_shape).tile(repeat_shape)
-    new_points = points[batch_indices, idx, :]
+    new_points = paddle.gather_nd(
+        points, paddle.stack([batch_indices, idx], axis=-1))
+    # new_points = points[batch_indices, idx, :]
     return new_points
 
 
