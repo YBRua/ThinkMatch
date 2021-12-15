@@ -54,8 +54,8 @@ def index_points(points, idx):
     view_shape[1:] = [1] * (len(view_shape) - 1)
     repeat_shape = list(idx.shape)
     repeat_shape[0] = 1
-    batch_indices = paddle.arange(B, dtype='int64').reshape(
-        view_shape).tile(repeat_shape)
+    # batch_indices = paddle.arange(B, dtype='int64').reshape(
+    #     view_shape).tile(repeat_shape)
     # new_points = points[batch_indices, idx, :]
     new_points = paddle.diagonal(paddle.gather(points, idx, axis=1))
     return new_points
@@ -103,7 +103,7 @@ def query_ball_point(radius, nsample, xyz, new_xyz):
         (1, 1, N)).tile([B, S, 1])
     sqrdists = square_distance(new_xyz, xyz)
     group_idx[sqrdists > radius ** 2] = N
-    group_idx = group_idx.sort(axis=-1)[0][:, :, :nsample]
+    group_idx = group_idx.sort(axis=-1)[:, :, :nsample]
     group_first = group_idx[:, :, 0].reshape((B, S, 1)).tile([1, 1, nsample])
     mask = group_idx == N
     group_idx[mask] = group_first[mask]
