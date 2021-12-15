@@ -71,7 +71,7 @@ def farthest_point_sample(xyz, npoint):
     # device = xyz.device
     B, N, C = xyz.shape
     centroids = paddle.zeros((B, npoint), dtype='int64')
-    distance = paddle.ones(B, N) * 1e10
+    distance = paddle.ones((B, N)) * 1e10
     farthest = paddle.randint(0, N, (B,), dtype='int64')
     batch_indices = paddle.arange(B, dtype='int64')
     for i in range(npoint):
