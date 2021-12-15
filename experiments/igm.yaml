@@ -13,7 +13,7 @@ FP16: False
 STATISTIC_STEP: 50
 RANDOM_SEED: 123
 
-# PRETRAINED_PATH: ThinkMatchPretrained/pretrained_params_vgg16_ngm_voc.pt
+PRETRAINED_PATH: pretrained/paddle_res34_igm_voc.pdparams
 
 # available GPU ids
 GPUS:
