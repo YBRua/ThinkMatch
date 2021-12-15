@@ -35,8 +35,8 @@ def square_distance(src, dst):
     B, N, _ = src.shape
     _, M, _ = dst.shape
     dist = -2 * paddle.matmul(src, dst.transpose((0, 2, 1)))
-    dist += paddle.sum(src ** 2, -1).reshape(B, N, 1)
-    dist += paddle.sum(dst ** 2, -1).reshape(B, 1, M)
+    dist += paddle.sum(src ** 2, -1).reshape((B, N, 1))
+    dist += paddle.sum(dst ** 2, -1).reshape((B, 1, M))
     return dist
 
 
@@ -70,13 +70,13 @@ def farthest_point_sample(xyz, npoint):
     """
     # device = xyz.device
     B, N, C = xyz.shape
-    centroids = paddle.zeros(B, npoint, dtype='int64')
+    centroids = paddle.zeros((B, npoint), dtype='int64')
     distance = paddle.ones(B, N) * 1e10
     farthest = paddle.randint(0, N, (B,), dtype='int64')
     batch_indices = paddle.arange(B, dtype='int64')
     for i in range(npoint):
         centroids[:, i] = farthest
-        centroid = xyz[batch_indices, farthest, :].reshape(B, 1, 3)
+        centroid = xyz[batch_indices, farthest, :].reshape((B, 1, 3))
         dist = paddle.sum((xyz - centroid) ** 2, -1)
         mask = dist < distance
         distance[mask] = dist[mask]
@@ -98,11 +98,11 @@ def query_ball_point(radius, nsample, xyz, new_xyz):
     B, N, C = xyz.shape
     _, S, _ = new_xyz.shape
     group_idx = paddle.arange(N, dtype='int64').reshape(
-        1, 1, N).tile([B, S, 1])
+        (1, 1, N)).tile([B, S, 1])
     sqrdists = square_distance(new_xyz, xyz)
     group_idx[sqrdists > radius ** 2] = N
     group_idx = group_idx.sort(axis=-1)[0][:, :, :nsample]
-    group_first = group_idx[:, :, 0].reshape(B, S, 1).tile([1, 1, nsample])
+    group_first = group_idx[:, :, 0].reshape((B, S, 1)).tile([1, 1, nsample])
     mask = group_idx == N
     group_idx[mask] = group_first[mask]
     return group_idx
@@ -130,7 +130,7 @@ def sample_and_group(npoint, radius, nsample, xyz, points, returnfps=False):
     paddle.device.cuda.empty_cache()
     grouped_xyz = index_points(xyz, idx)  # [B, npoint, nsample, C]
     paddle.device.cuda.empty_cache()
-    grouped_xyz_norm = grouped_xyz - new_xyz.reshape(B, S, 1, C)
+    grouped_xyz_norm = grouped_xyz - new_xyz.reshape((B, S, 1, C))
     paddle.device.cuda.empty_cache()
 
     if points is not None:
@@ -156,11 +156,11 @@ def sample_and_group_all(xyz, points):
     """
     # device = xyz.device
     B, N, C = xyz.shape
-    new_xyz = paddle.zeros(B, 1, C)
-    grouped_xyz = xyz.reshape(B, 1, N, C)
+    new_xyz = paddle.zeros((B, 1, C))
+    grouped_xyz = xyz.reshape((B, 1, N, C))
     if points is not None:
         new_points = paddle.concat(
-            [grouped_xyz, points.reshape(B, 1, N, -1)], axis=-1)
+            [grouped_xyz, points.reshape((B, 1, N, -1))], axis=-1)
     else:
         new_points = grouped_xyz
     return new_xyz, new_points
@@ -254,8 +254,8 @@ class PointNetSetAbstractionMsg(nn.Layer):
             group_idx = query_ball_point(radius, K, xyz, new_xyz)
             grouped_xyz = index_points(xyz, group_idx)
             dst = paddle.norm(
-                grouped_xyz - new_xyz.reshape(B, S, 1, C), axis=-1)
-            grouped_xyz -= new_xyz.reshape(B, S, 1, C)
+                grouped_xyz - new_xyz.reshape((B, S, 1, C)), axis=-1)
+            grouped_xyz -= new_xyz.reshape((B, S, 1, C))
             grouped_xyz[..., 2] = dst
             if points is not None:
                 grouped_points = index_points(points, group_idx)
@@ -268,10 +268,10 @@ class PointNetSetAbstractionMsg(nn.Layer):
                 grouped_points,
                 es[
                     paddle.arange(
-                        group_idx.shape[0], device=group_idx.device).reshape(-1, 1, 1),
+                        group_idx.shape[0], device=group_idx.device).reshape((-1, 1, 1)),
                     :,
                     paddle.arange(group_idx.shape[1], device=group_idx.device).reshape(
-                        1, -1, 1),
+                        (1, -1, 1)),
                     group_idx
                 ]
             ], axis=-1)
@@ -328,7 +328,7 @@ class PointNetFeaturePropagation(nn.Layer):
             norm = paddle.sum(dist_recip, axis=2, keepaxis=True)
             weight = dist_recip / norm
             interpolated_points = paddle.sum(index_points(
-                points2, idx) * weight.reshape(B, N, 3, 1), axis=2)
+                points2, idx) * weight.reshape((B, N, 3, 1)), axis=2)
 
         if points1 is not None:
             points1 = points1.transpose((0, 2, 1))
