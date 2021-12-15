@@ -56,7 +56,8 @@ def index_points(points, idx):
     repeat_shape[0] = 1
     batch_indices = paddle.arange(B, dtype='int64').reshape(
         view_shape).tile(repeat_shape)
-    new_points = points[batch_indices, idx, :]
+    # new_points = points[batch_indices, idx, :]
+    new_points = paddle.diagonal(paddle.gather(points, idx, axis=1))
     return new_points
 
 
@@ -248,7 +249,9 @@ class PointNetSetAbstractionMsg(nn.Layer):
 
         B, N, C = xyz.shape
         S = min(N, self.npoint)
-        new_xyz = index_points(xyz, farthest_point_sample(xyz, S))
+        # FIXME: Paddle does not support indexing by Tensor
+        # new_xyz = index_points(xyz, farthest_point_sample(xyz, S))
+        new_xyz = xyz
         new_points_list = []
         for i, radius in enumerate(self.radius_list):
             K = min(S, self.nsample_list[i])
