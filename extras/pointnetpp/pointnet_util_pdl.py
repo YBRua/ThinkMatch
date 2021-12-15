@@ -106,7 +106,8 @@ def query_ball_point(radius, nsample, xyz, new_xyz):
     group_idx = group_idx.sort(axis=-1)[:, :, :nsample]
     group_first = group_idx[:, :, 0].reshape((B, S, 1)).tile([1, 1, nsample])
     mask = group_idx == N
-    group_idx[mask] = group_first[mask]
+    # group_idx[mask] = group_first[mask]
+    group_idx = paddle.where(mask, group_first, group_idx)
     return group_idx
 
 
