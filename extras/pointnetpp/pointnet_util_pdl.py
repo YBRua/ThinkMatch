@@ -103,7 +103,7 @@ def query_ball_point(radius, nsample, xyz, new_xyz):
         (1, 1, N)).tile([B, S, 1])
     sqrdists = square_distance(new_xyz, xyz)
     group_idx[sqrdists > radius ** 2] = N
-    group_idx = group_idx.sort(axis=-1)[0][:, :, :nsample]
+    group_idx = group_idx.sort(axis=-1)[:, :, :nsample]
     group_first = group_idx[:, :, 0].reshape((B, S, 1)).tile([1, 1, nsample])
     mask = group_idx == N
     group_idx[mask] = group_first[mask]
