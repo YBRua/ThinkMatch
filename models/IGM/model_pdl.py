@@ -132,7 +132,7 @@ class Net(nn.Layer):
         ], 1)  # BCN^2
         CE = paddle.concat([L, E], 1)
         mask = paddle.arange(
-            F_.shape[-1]).expand(len(F_), F_.shape[-1]) < n.unsqueeze(-1)
+            F_.shape[-1]).expand((len(F_), F_.shape[-1])) < n.unsqueeze(-1)
         # BN
         mask = mask.unsqueeze(-2) & mask.unsqueeze(-1)
         return (F.sigmoid(self.edge_gate(CE)) * F.normalize(self.edge_proj(CE), axis=1) * mask.flatten(1).unsqueeze(1)).reshape(F_.shape[0], -1, F_.shape[-1], F_.shape[-1])
@@ -145,9 +145,9 @@ class Net(nn.Layer):
         #     P_src = P_src + torch.rand_like(P_src)[..., :1] * 0.2 - 0.1
         #     P_tgt = P_tgt + torch.rand_like(P_tgt)[..., :1] * 0.2 - 0.1
         key_mask_src = paddle.arange(y_src.shape[-1]).expand(
-            len(y_src), y_src.shape[-1]) < n_src.unsqueeze(-1)
+            (len(y_src), y_src.shape[-1])) < n_src.unsqueeze(-1)
         key_mask_tgt = paddle.arange(y_tgt.shape[-1]).expand(
-            len(y_tgt), y_tgt.shape[-1]) < n_tgt.unsqueeze(-1)
+            (len(y_tgt), y_tgt.shape[-1])) < n_tgt.unsqueeze(-1)
         key_mask_cat = paddle.concat((key_mask_src, key_mask_tgt), -1).unsqueeze(1)
         P_src = paddle.concat((P_src, paddle.zeros_like(P_src[:, :1])), 1)
         P_tgt = paddle.concat((P_tgt, paddle.ones_like(P_tgt[:, :1])), 1)
