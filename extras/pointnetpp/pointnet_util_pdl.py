@@ -49,24 +49,14 @@ def index_points(points, idx):
         new_points:, indexed points data, [B, S, C]
     """
     # device = points.device
-    B, N, C = points.shape
-    _, S, K = idx.shape
-    # view_shape = list(idx.shape)
-    # view_shape[1:] = [1] * (len(view_shape) - 1)
-    # repeat_shape = list(idx.shape)
-    # repeat_shape[0] = 1
-    # batch_indices = paddle.arange(B, dtype='int64').reshape(
-    #     view_shape).tile(repeat_shape)
-    # new_points = points[batch_indices, idx, :]
-    # new_points = paddle.masked_select(
-    #     paddle.gather(points, idx, axis=1),
-    #     paddle.eye(B).unsqueeze(-1).unsqueeze(-1).tile((1, 1, N, C))
-    # ).reshape((B, S, C))
-    new_points = paddle.zeros((B, S, K, C))
-    for b in range(B):
-        for s in range(S):
-            for k in range(K):
-                new_points[b, s, k, :] = points[b, idx[b, s, k]]
+    B = points.shape[0]
+    view_shape = list(idx.shape)
+    view_shape[1:] = [1] * (len(view_shape) - 1)
+    repeat_shape = list(idx.shape)
+    repeat_shape[0] = 1
+    batch_indices = paddle.arange(B, dtype='int64').reshape(
+        view_shape).tile(repeat_shape)
+    new_points = points[batch_indices, idx, :]
     return new_points
 
 
@@ -80,19 +70,18 @@ def farthest_point_sample(xyz, npoint):
     """
     # device = xyz.device
     B, N, C = xyz.shape
-    # centroids = paddle.zeros((B, npoint), dtype='int64')
-    # distance = paddle.ones((B, N)) * 1e10
-    # farthest = paddle.randint(0, N, (B,), dtype='int64')
-    # batch_indices = paddle.arange(B, dtype='int64').tolist()
-    # for i in range(npoint):
-    #     centroids[:, i] = farthest
-    #     centroid = xyz[batch_indices, farthest, :].reshape((B, 1, 3))
-    #     dist = paddle.sum((xyz - centroid) ** 2, -1)
-    #     mask = dist < distance
-    #     distance[mask] = dist[mask]
-    #     farthest = paddle.argmax(distance, -1)
-    # return centroids
-    return paddle.arange(0, npoint, dtype='int64').reshape((1, npoint)).tile((B, 1))
+    centroids = paddle.zeros((B, npoint), dtype='int64')
+    distance = paddle.ones((B, N)) * 1e10
+    farthest = paddle.randint(0, N, (B,), dtype='int64')
+    batch_indices = paddle.arange(B, dtype='int64')
+    for i in range(npoint):
+        centroids[:, i] = farthest
+        centroid = xyz[batch_indices, farthest, :].reshape((B, 1, 3))
+        dist = paddle.sum((xyz - centroid) ** 2, -1)
+        mask = dist < distance
+        distance[mask] = dist[mask]
+        farthest = paddle.argmax(distance, -1)
+    return centroids
 
 
 def query_ball_point(radius, nsample, xyz, new_xyz):
@@ -112,10 +101,10 @@ def query_ball_point(radius, nsample, xyz, new_xyz):
         (1, 1, N)).tile([B, S, 1])
     sqrdists = square_distance(new_xyz, xyz)
     group_idx[sqrdists > radius ** 2] = N
-    group_idx = group_idx.sort(axis=-1)[:, :, :nsample]
+    group_idx = group_idx.sort(axis=-1)[0][:, :, :nsample]
     group_first = group_idx[:, :, 0].reshape((B, S, 1)).tile([1, 1, nsample])
     mask = group_idx == N
-    group_idx = paddle.where(mask, group_first, group_idx)
+    group_idx[mask] = group_first[mask]
     return group_idx
 
 
@@ -258,9 +247,7 @@ class PointNetSetAbstractionMsg(nn.Layer):
 
         B, N, C = xyz.shape
         S = min(N, self.npoint)
-        # FIXME: Paddle does not support indexing by Tensor
-        # new_xyz = index_points(xyz, farthest_point_sample(xyz, S))
-        new_xyz = xyz
+        new_xyz = index_points(xyz, farthest_point_sample(xyz, S))
         new_points_list = []
         for i, radius in enumerate(self.radius_list):
             K = min(S, self.nsample_list[i])
@@ -281,9 +268,9 @@ class PointNetSetAbstractionMsg(nn.Layer):
                 grouped_points,
                 es[
                     paddle.arange(
-                        group_idx.shape[0]).reshape((-1, 1, 1)),
+                        group_idx.shape[0], device=group_idx.device).reshape((-1, 1, 1)),
                     :,
-                    paddle.arange(group_idx.shape[1]).reshape(
+                    paddle.arange(group_idx.shape[1], device=group_idx.device).reshape(
                         (1, -1, 1)),
                     group_idx
                 ]
@@ -340,10 +327,8 @@ class PointNetFeaturePropagation(nn.Layer):
             dist_recip = 1.0 / (dists + 1e-8)
             norm = paddle.sum(dist_recip, axis=2, keepaxis=True)
             weight = dist_recip / norm
-            # FIXME: Workaround on not using index_point here
-            # interpolated_points = paddle.sum(index_points(
-            #     points2, idx) * weight.reshape((B, N, 3, 1)), axis=2)
-            interpolated_points = points2
+            interpolated_points = paddle.sum(index_points(
+                points2, idx) * weight.reshape((B, N, 3, 1)), axis=2)
 
         if points1 is not None:
             points1 = points1.transpose((0, 2, 1))
