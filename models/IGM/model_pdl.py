@@ -161,7 +161,7 @@ class Net(nn.Layer):
         e_cat[..., :e_src.shape[2], :e_src.shape[3]] = e_src
         e_cat[..., e_src.shape[2]:, e_src.shape[3]:] = e_tgt
         r1, r2 = self.pn(paddle.concat((pcd, y_cat), 1) * key_mask_cat, e_cat, g)
-        return r1[..., :y_src.shape[-1]], r2[..., :y_src.shape[-1]]
+        return r1[:, :, :y_src.shape[-1]], r2[:, :, :y_src.shape[-1]]
 
     def forward(self, data_dict, **kwargs):
         src, tgt = data_dict['images']
