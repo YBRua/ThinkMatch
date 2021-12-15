@@ -60,7 +60,7 @@ class Sinkhorn(nn.Layer):
             dummy_shape[1] = s.shape[2] - s.shape[1]
             ori_nrows = nrows
             nrows = ncols
-            s = paddle.cat((s, paddle.full(dummy_shape, -float('inf')).cuda()), axis=1)
+            s = paddle.concat((s, paddle.full(dummy_shape, -float('inf')).cuda()), axis=1)
             for b in range(batch_size):
                 s[b, ori_nrows[b]:nrows[b], :ncols[b]] = -100
                 s[b, nrows[b]:, :] = -float('inf')
