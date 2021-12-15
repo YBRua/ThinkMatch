@@ -174,8 +174,8 @@ class Net(nn.Layer):
             feat_srcs.append(feat[:len(src)])
             feat_tgts.append(feat[len(src):])
         if self.training:
-            P_src = P_src + paddle.randn(P_src.shape) * 2 - 1
-            P_tgt = P_tgt + paddle.randn(P_tgt.shape) * 2 - 1
+            P_src = P_src + paddle.randn(P_src.shape, dtype='float32') * 2 - 1
+            P_tgt = P_tgt + paddle.randn(P_tgt.shape, dtype='float32') * 2 - 1
         F_src, F_tgt, g_src, g_tgt = self.halo(
             feat_srcs, feat_tgts, P_src, P_tgt)
 
