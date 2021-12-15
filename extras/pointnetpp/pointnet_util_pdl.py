@@ -329,7 +329,7 @@ class PointNetFeaturePropagation(nn.Layer):
             interpolated_points = points2.tile((1, N, 1))
         else:
             dists = square_distance(xyz1, xyz2)
-            dists, idx = dists.sort(axis=-1)
+            dists, idx = dists.sort(axis=-1), dists.argsort(axis=-1)
             dists, idx = dists[:, :, :3], idx[:, :, :3]  # [B, N, 3]
 
             dist_recip = 1.0 / (dists + 1e-8)
