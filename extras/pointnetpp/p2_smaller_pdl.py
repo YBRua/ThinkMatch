@@ -60,7 +60,7 @@ class get_model(nn.Layer):
         l1_points = l2_points
         # cls_label = self.cls_emb(paddle.tensor([labels.index(i) for i in cls], device=l1_points.device))
         # cls_label_one_hot = cls_label.view(B, 32, 1).repeat(1, 1, N)
-        g = g.tile(1, 1, N)
+        g = g.tile((1, 1, N))
         l0_points = self.fp1(l0_xyz, l1_xyz, paddle.concat(
             [g, l0_xyz, l0_points], 1), l1_points)
         # FC layers
