@@ -333,7 +333,7 @@ class PointNetFeaturePropagation(nn.Layer):
             dists, idx = dists[:, :, :3], idx[:, :, :3]  # [B, N, 3]
 
             dist_recip = 1.0 / (dists + 1e-8)
-            norm = paddle.sum(dist_recip, axis=2, keepaxis=True)
+            norm = paddle.sum(dist_recip, axis=2, keepdim=True)
             weight = dist_recip / norm
             interpolated_points = paddle.sum(index_points(
                 points2, idx) * weight.reshape((B, N, 3, 1)), axis=2)
