@@ -76,7 +76,7 @@ def farthest_point_sample(xyz, npoint):
     batch_indices = paddle.arange(B, dtype='int64').tolist()
     for i in range(npoint):
         centroids[:, i] = farthest
-        centroid = xyz[batch_indices, farthest, :].reshape((B, 1, 3))
+        centroid = xyz[batch_indices, farthest.tolist(), :].reshape((B, 1, 3))
         dist = paddle.sum((xyz - centroid) ** 2, -1)
         mask = dist < distance
         distance[mask] = dist[mask]
