@@ -1,50 +1,48 @@
-#include <torch/torch.h>
-#include <utility>
-
+#include "paddle/extension.h"
 #include <iostream>
 
 /* CUDA Declaration */
 
-at::Tensor bilinear_diag_csc_cuda(
-    at::Tensor t1_indices,
-    at::Tensor t1_indptr,
-    at::Tensor t1_data,
-    at::Tensor t2,
-    at::Tensor t3_indices,
-    at::Tensor t3_indptr,
-    at::Tensor t3_data,
+std::vector<paddle::Tensor> bilinear_diag_csc_cuda(
+    const paddle::Tensor &t1_indices,
+    const paddle::Tensor &t1_indptr,
+    const paddle::Tensor &t1_data,
+    const paddle::Tensor &t2,
+    const paddle::Tensor &t3_indices,
+    const paddle::Tensor &t3_indptr,
+    const paddle::Tensor &t3_data,
     int64_t batch_size,
     int64_t xlen);
 
 
-#define CHECK_CUDA(x) AT_ASSERTM(x.type().is_cuda(), #x " must be a CUDA tensor")
-#define CHECK_CPU(x) AT_ASSERTM(!x.type().is_cuda(), #x " must be a CPU tensor")
-#define CHECK_CONTIGUOUS(x) AT_ASSERTM(x.is_contiguous(), #x " must be contiguous")
-#define CHECK_INPUT(x) CHECK_CUDA(x); CHECK_CONTIGUOUS(x)
+#define CHECK_CUDA(x) PD_CHECK(x.place() == paddle::PlaceType::kGPU, #x " must be a GPU Tensor.")
+#define CHECK_CPU(x) PD_CHECK(x.place() == paddle::PlaceType::kCPU, #x " must be a CPU Tensor.")
+#define CHECK_INPUT(x) CHECK_CUDA(x)
 
 
 /* Dense Implementation */
 
-at::Tensor bilinear_diag_dense(
-    at::Tensor t1,
-    at::Tensor t2,
-    at::Tensor t3
-){
-    auto sizes = t1.sizes();
-    auto batch_size = sizes[0];
-    auto xlen = sizes[1];
-    auto outp = at::empty({batch_size, xlen}, t2.type());
-    for(int64_t i = 0; i < xlen; i++)
-    {
-        auto _t1 = at::slice(t1, 1, i, i+1);
-        auto tmp = at::bmm(_t1, t2);
-        auto _t3 = at::slice(t3, 2, i, i+1);
-        auto _outp = at::bmm(tmp, _t3).view(-1);
-        for(int64_t j = 0; j < batch_size; j++)
-            outp[j][i] = _outp[j];
-    }
-    return outp;
-}
+// std::vector<paddle::Tensor> bilinear_diag_dense(
+//     const paddle::Tensor &t1,
+//     const paddle::Tensor &t2,
+//     const paddle::Tensor &t3
+// ){
+//     auto sizes = t1.shape();
+//     auto batch_size = sizes[0];
+//     auto xlen = sizes[1];
+//     auto outp = paddle::Tensor(t2.place(), {batch_size, xlen});
+//     for(int64_t i = 0; i < xlen; i++)
+//     {
+//         auto _t1 = paddle::slice(t1, 1, i, i+1);
+//         paddle::
+//         auto tmp = paddle::bmm(_t1, t2);
+//         auto _t3 = paddle::slice(t3, 2, i, i+1);
+//         auto _outp = paddle::bmm(tmp, _t3).view(-1);
+//         for(int64_t j = 0; j < batch_size; j++)
+//             outp[j][i] = _outp[j];
+//     }
+//     return outp;
+// }
 
 
 /* COO Sparse Implementation */
@@ -62,9 +60,9 @@ bool sort_smaller_than(int64_t main1, int64_t main2, int64_t minor1, int64_t min
 }
 
 
-void sort_sparse_helper(at::Tensor main,
-                        at::Tensor minor,
-                        std::vector<at::Tensor> others,
+void sort_sparse_helper(const paddle::Tensor &main,
+                        const paddle::Tensor &minor,
+                        std::vector<paddle::Tensor> others,
                         int64_t begin,
                         int64_t end)
 {
@@ -74,8 +72,8 @@ void sort_sparse_helper(at::Tensor main,
     auto head = begin;
     auto tail = end;
     auto reverse = true;
-    auto main_access = main.accessor<int64_t, 1>();
-    auto minor_access = minor.accessor<int64_t, 1>();
+    auto* main_access = main.mutable_data<int64_t>();
+    auto* minor_access = minor.mutable_data<int64_t>();
     while (head != tail)
     {
         if (sort_smaller_than(main_access[tail], main_access[head], minor_access[tail], minor_access[head]))
@@ -85,19 +83,19 @@ void sort_sparse_helper(at::Tensor main,
             std::swap(minor_access[head], minor_access[tail]);
             for (auto iter = others.cbegin(); iter != others.cend(); iter++)
             {
-                if (iter->dtype() == at::ScalarType::Float)
+                if (iter->dtype() == paddle::ScalarType::Float)
                 {
-                    auto others_access = iter->accessor<float ,1>();
+                    auto others_access = iter->mutable_data<float>();
                     std::swap(others_access[head], others_access[tail]);
                 }
-                else if (iter->dtype() == at::ScalarType::Double)
+                else if (iter->dtype() == paddle::ScalarType::Double)
                 {
-                    auto others_access = iter->accessor<double, 1>();
+                    auto others_access = iter->mutable_data<double>();
                     std::swap(others_access[head], others_access[tail]);
                 }
                 else
                 {
-                    auto others_access = iter->accessor<int64_t, 1>();
+                    auto others_access = iter->mutable_data<int64_t>();
                     std::swap(others_access[head], others_access[tail]);
                 }
             }
@@ -118,9 +116,13 @@ void sort_sparse_helper(at::Tensor main,
 }
 
 
-at::Tensor sort_sparse(at::Tensor ts, int64_t main_dim, int64_t minor_dim)
+std::vector<paddle::Tensor> sort_sparse(
+    const paddle::Tensor &ts,
+    int64_t main_dim,
+    int64_t minor_dim
+)
 {
-    assert(ts.is_sparse());
+    // assert(ts.is_sparse());
     auto max_dim = ts.dim();
 
     if (main_dim < 0)
@@ -137,7 +139,7 @@ at::Tensor sort_sparse(at::Tensor ts, int64_t main_dim, int64_t minor_dim)
     auto ind_sizes = ind.sizes();
     auto dim_len = ind_sizes[1];
 
-    std::vector<at::Tensor> others;
+    std::vector<paddle::Tensor> others;
     for (int64_t i = 0; i < max_dim; i++)
         if ((i != main_dim) && (i != minor_dim))
             others.push_back(ind[i]);
@@ -150,7 +152,7 @@ at::Tensor sort_sparse(at::Tensor ts, int64_t main_dim, int64_t minor_dim)
 }
 
 
-void split_sorted_coo(at::Tensor t, int64_t xlen_indices[], int64_t xlen_dim)
+void split_sorted_coo(paddle::Tensor t, int64_t xlen_indices[], int64_t xlen_dim)
 {
     auto indices = t._indices();
     auto t_nnz = t._nnz();
@@ -177,16 +179,16 @@ void split_sorted_coo(at::Tensor t, int64_t xlen_indices[], int64_t xlen_dim)
 }
 
 
-at::Tensor bilinear_diag_coo(
-    at::Tensor t1,
-    at::Tensor t2,
-    at::Tensor t3
+std::vector<paddle::Tensor> bilinear_diag_coo(
+    paddle::Tensor t1,
+    paddle::Tensor t2,
+    paddle::Tensor t3
 ){
     auto t1_sizes = t1.sizes();
     auto batch_size = t1_sizes[0];
     auto xlen = t1_sizes[1];
     auto feat_size = t1_sizes[2];
-    auto outp = at::zeros({batch_size, xlen}, t2.type());
+    auto outp = paddle::zeros({batch_size, xlen}, t2.type());
 
     auto t1_indices = t1._indices();
     auto t1_values = t1._values();
@@ -228,14 +230,14 @@ at::Tensor bilinear_diag_coo(
 
 /* CSC Sparse Implementation */
 
-at::Tensor bilinear_diag_csc_cpu(
-    at::Tensor t1_indices,
-    at::Tensor t1_indptr,
-    at::Tensor t1_data,
-    at::Tensor t2,
-    at::Tensor t3_indices,
-    at::Tensor t3_indptr,
-    at::Tensor t3_data,
+std::vector<paddle::Tensor> bilinear_diag_csc_cpu(
+    paddle::Tensor t1_indices,
+    paddle::Tensor t1_indptr,
+    paddle::Tensor t1_data,
+    paddle::Tensor t2,
+    paddle::Tensor t3_indices,
+    paddle::Tensor t3_indptr,
+    paddle::Tensor t3_data,
     int64_t batch_size,
     int64_t xlen
 ){
@@ -247,7 +249,7 @@ at::Tensor bilinear_diag_csc_cpu(
     CHECK_CPU(t3_indptr);
     CHECK_CPU(t3_data);
 
-    auto outp = at::zeros({batch_size, xlen}, t2.type());
+    auto outp = paddle::zeros({batch_size, xlen}, t2.type());
     auto t1_indptr_acc = t1_indptr.accessor<int64_t, 1>();
     auto t3_indptr_acc = t3_indptr.accessor<int64_t, 1>();
 
@@ -275,14 +277,14 @@ at::Tensor bilinear_diag_csc_cpu(
 }
 
 
-at::Tensor bilinear_diag_csc_cuda_wrapper(
-    at::Tensor t1_indices,
-    at::Tensor t1_indptr,
-    at::Tensor t1_data,
-    at::Tensor t2,
-    at::Tensor t3_indices,
-    at::Tensor t3_indptr,
-    at::Tensor t3_data,
+std::vector<paddle::Tensor> bilinear_diag_csc_cuda_wrapper(
+    paddle::Tensor t1_indices,
+    paddle::Tensor t1_indptr,
+    paddle::Tensor t1_data,
+    paddle::Tensor t2,
+    paddle::Tensor t3_indices,
+    paddle::Tensor t3_indptr,
+    paddle::Tensor t3_data,
     int64_t batch_size,
     int64_t xlen
 ){
@@ -300,14 +302,14 @@ at::Tensor bilinear_diag_csc_cuda_wrapper(
 }
 
 
-at::Tensor bilinear_diag_csc(
-    at::Tensor t1_indices,
-    at::Tensor t1_indptr,
-    at::Tensor t1_data,
-    at::Tensor t2,
-    at::Tensor t3_indices,
-    at::Tensor t3_indptr,
-    at::Tensor t3_data,
+std::vector<paddle::Tensor> bilinear_diag_csc(
+    paddle::Tensor t1_indices,
+    paddle::Tensor t1_indptr,
+    paddle::Tensor t1_data,
+    paddle::Tensor t2,
+    paddle::Tensor t3_indices,
+    paddle::Tensor t3_indptr,
+    paddle::Tensor t3_data,
     int64_t batch_size,
     int64_t xlen
 )

@@ -39,8 +39,8 @@ std::vector<at::Tensor> csr_dot_diag_cuda(
     int64_t out_h,
     int64_t out_w
 ){
-    auto outp_indices = paddle::Tensor(t1_indices);
-    auto outp_indptr = paddle::Tensor(t1_indptr);
+    auto outp_indices = t1_indices.copy_to(t1_indices.place());
+    auto outp_indptr = t1_indptr.copy_to(t1_indptr.place());
     auto outp_data = paddle::Tensor(t1_data.place(), t1_data.shape());
 
     const int block = 1024;
