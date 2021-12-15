@@ -202,7 +202,7 @@ class Net(nn.Layer):
         ff_tgt, folding_tgt = self.points(
             y_tgt, y_src, P_tgt, P_src, ns_tgt, ns_src, ea_tgt, ea_src, g_tgt)
 
-        sim = torch.einsum(
+        sim = paddle.einsum(
             'bci,bcj->bij',
             folding_src,
             folding_tgt
