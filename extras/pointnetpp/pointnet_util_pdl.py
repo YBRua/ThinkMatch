@@ -277,20 +277,16 @@ class PointNetSetAbstractionMsg(nn.Layer):
             else:
                 grouped_points = grouped_xyz
 
-            es_selected = paddle.zeros((B, S, K, es.shape[1]))
-            for s in range(S):
-                for k in range(K):
-                    for b in range(B):
-                        es_selected[b, s, k, :] = es[b, :, s, k]
             grouped_points = paddle.concat([
                 grouped_points,
-                # es[
-                #     paddle.arange(group_idx.shape[0]).reshape((-1, 1, 1)),
-                #     :,
-                #     paddle.arange(group_idx.shape[1]).reshape((1, -1, 1)),
-                #     group_idx
-                # ]
-                es_selected
+                es[
+                    paddle.arange(
+                        group_idx.shape[0]).reshape((-1, 1, 1)),
+                    :,
+                    paddle.arange(group_idx.shape[1]).reshape(
+                        (1, -1, 1)),
+                    group_idx
+                ]
             ], axis=-1)
             grouped_points = grouped_points.transpose(
                 (0, 3, 2, 1))  # [B, D, K, S]
