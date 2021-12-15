@@ -202,11 +202,12 @@ class Net(nn.Layer):
         ff_tgt, folding_tgt = self.points(
             y_tgt, y_src, P_tgt, P_src, ns_tgt, ns_src, ea_tgt, ea_src, g_tgt)
 
-        sim = paddle.einsum(
-            'bci,bcj->bij',
-            folding_src,
-            folding_tgt
-        )
+        # sim = paddle.einsum(
+        #     'bci,bcj->bij',
+        #     folding_src,
+        #     folding_tgt
+        # )
+        sim = paddle.bmm(folding_src.transpose((0, 2, 1)), folding_tgt)
         data_dict['ds_mat'] = self.sinkhorn(
             sim, ns_src, ns_tgt, dummy_row=True)
         data_dict['perm_mat'] = hungarian(data_dict['ds_mat'], ns_src, ns_tgt)
