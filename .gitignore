@@ -116,3 +116,5 @@ train_eval.py
 eval.py
 rubbish_log/
 
+# .vscode
+.vscode/
