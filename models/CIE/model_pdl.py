@@ -69,7 +69,7 @@ class Net(CNN):
             # real image data
             src, tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['images']]
             P_src, P_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['Ps']]
-            ns_src, ns_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['ns']]
+            ns_src, ns_tgt = [paddle.to_tensor(data=_, dtype='int64') for _ in data_dict['ns']]
             G_src, G_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['Gs']]
             H_src, H_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['Hs']]
             # extract feature

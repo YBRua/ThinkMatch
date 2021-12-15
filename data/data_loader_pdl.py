@@ -81,7 +81,7 @@ class GMDataset(Dataset):
         # pyg_graph2 = self.to_pyg_graph(A2, P2)
 
         ret_dict = {'Ps': [paddle.to_tensor(data=x, dtype='float32') for x in [P1, P2]],
-                    'ns': [paddle.to_tensor(data=x, dtype='float32') for x in [n1, n2]],
+                    'ns': [paddle.to_tensor(data=x, dtype='int64') for x in [n1, n2]],
                     'es': [paddle.to_tensor(data=x, dtype='float32') for x in [e1, e2]],
                     'gt_perm_mat': perm_mat,
                     'Gs': [paddle.to_tensor(data=x, dtype='float32') for x in [G1, G2]],
