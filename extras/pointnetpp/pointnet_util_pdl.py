@@ -271,14 +271,15 @@ class PointNetSetAbstractionMsg(nn.Layer):
 
             grouped_points = paddle.concat([
                 grouped_points,
-                es[
-                    paddle.arange(
-                        group_idx.shape[0], device=group_idx.device).reshape((-1, 1, 1)),
-                    :,
-                    paddle.arange(group_idx.shape[1], device=group_idx.device).reshape(
-                        (1, -1, 1)),
-                    group_idx
-                ]
+                paddle.gather_nd(
+                    es.tranpose((0, 2, 3, 1)),
+                    paddle.stack([
+                        paddle.arange(group_idx.shape[0])
+                        .reshape((-1, 1, 1)).expand_as(group_idx),
+                        paddle.arange(group_idx.shape[1])
+                        .reshape((1, -1, 1)).expand_as(group_idx),
+                        group_idx
+                    ], axis=-1))
             ], axis=-1)
             grouped_points = grouped_points.transpose(
                 (0, 3, 2, 1))  # [B, D, K, S]
