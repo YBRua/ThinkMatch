@@ -58,6 +58,7 @@ def index_points(points, idx):
         view_shape).tile(repeat_shape)
     new_points = paddle.gather_nd(
         points, paddle.stack([batch_indices, idx], axis=-1))
+    print(new_points.shape)
     # new_points = points[batch_indices, idx, :]
     return new_points
 
@@ -281,6 +282,7 @@ class PointNetSetAbstractionMsg(nn.Layer):
                         group_idx
                     ], axis=-1))
             ], axis=-1)
+            print("grouped_points", grouped_points.shape)
             grouped_points = grouped_points.transpose(
                 (0, 3, 2, 1))  # [B, D, K, S]
             for j in range(len(self.conv_blocks[i])):
