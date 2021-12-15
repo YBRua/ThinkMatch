@@ -134,7 +134,7 @@ class Net(nn.Layer):
         mask = paddle.arange(
             F_.shape[-1]).expand((len(F_), F_.shape[-1])) < n.unsqueeze(-1)
         # BN
-        mask = mask.unsqueeze(-2) & mask.unsqueeze(-1)
+        mask = paddle.logical_and(mask.unsqueeze(-2), mask.unsqueeze(-1))
         return (F.sigmoid(self.edge_gate(CE)) * F.normalize(self.edge_proj(CE), axis=1) * mask.flatten(1).unsqueeze(1)).reshape(F_.shape[0], -1, F_.shape[-1], F_.shape[-1])
 
     def points(self, y_src, y_tgt, P_src, P_tgt, n_src, n_tgt, e_src, e_tgt, g):
