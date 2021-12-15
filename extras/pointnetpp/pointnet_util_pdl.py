@@ -70,18 +70,19 @@ def farthest_point_sample(xyz, npoint):
     """
     # device = xyz.device
     B, N, C = xyz.shape
-    centroids = paddle.zeros((B, npoint), dtype='int64')
-    distance = paddle.ones((B, N)) * 1e10
-    farthest = paddle.randint(0, N, (B,), dtype='int64')
-    batch_indices = tuple(paddle.arange(B, dtype='int64').tolist())
-    for i in range(npoint):
-        centroids[:, i] = farthest
-        centroid = xyz[batch_indices, tuple(farthest.tolist()), :].reshape((B, 1, 3))
-        dist = paddle.sum((xyz - centroid) ** 2, -1)
-        mask = dist < distance
-        distance[mask] = dist[mask]
-        farthest = paddle.argmax(distance, -1)
-    return centroids
+    # centroids = paddle.zeros((B, npoint), dtype='int64')
+    # distance = paddle.ones((B, N)) * 1e10
+    # farthest = paddle.randint(0, N, (B,), dtype='int64')
+    # batch_indices = paddle.arange(B, dtype='int64').tolist()
+    # for i in range(npoint):
+    #     centroids[:, i] = farthest
+    #     centroid = xyz[batch_indices, farthest, :].reshape((B, 1, 3))
+    #     dist = paddle.sum((xyz - centroid) ** 2, -1)
+    #     mask = dist < distance
+    #     distance[mask] = dist[mask]
+    #     farthest = paddle.argmax(distance, -1)
+    # return centroids
+    return paddle.arange(0, npoint, dtype='int64').reshape((1, npoint)).tile((B, 1))
 
 
 def query_ball_point(radius, nsample, xyz, new_xyz):
