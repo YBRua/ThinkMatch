@@ -49,15 +49,24 @@ def index_points(points, idx):
         new_points:, indexed points data, [B, S, C]
     """
     # device = points.device
-    B = points.shape[0]
-    view_shape = list(idx.shape)
-    view_shape[1:] = [1] * (len(view_shape) - 1)
-    repeat_shape = list(idx.shape)
-    repeat_shape[0] = 1
+    B, N, C = points.shape
+    _, S, K = idx.shape
+    # view_shape = list(idx.shape)
+    # view_shape[1:] = [1] * (len(view_shape) - 1)
+    # repeat_shape = list(idx.shape)
+    # repeat_shape[0] = 1
     # batch_indices = paddle.arange(B, dtype='int64').reshape(
     #     view_shape).tile(repeat_shape)
     # new_points = points[batch_indices, idx, :]
-    new_points = paddle.diagonal(paddle.gather(points, idx, axis=1))
+    # new_points = paddle.masked_select(
+    #     paddle.gather(points, idx, axis=1),
+    #     paddle.eye(B).unsqueeze(-1).unsqueeze(-1).tile((1, 1, N, C))
+    # ).reshape((B, S, C))
+    new_points = paddle.zeros((B, S, K, C))
+    for b in range(B):
+        for s in range(S):
+            for k in range(K):
+                new_points[b, s, k, :] = points[b, idx[b, s, k]]
     return new_points
 
 
@@ -331,8 +340,10 @@ class PointNetFeaturePropagation(nn.Layer):
             dist_recip = 1.0 / (dists + 1e-8)
             norm = paddle.sum(dist_recip, axis=2, keepaxis=True)
             weight = dist_recip / norm
-            interpolated_points = paddle.sum(index_points(
-                points2, idx) * weight.reshape((B, N, 3, 1)), axis=2)
+            # FIXME: Workaround on not using index_point here
+            # interpolated_points = paddle.sum(index_points(
+            #     points2, idx) * weight.reshape((B, N, 3, 1)), axis=2)
+            interpolated_points = points2
 
         if points1 is not None:
             points1 = points1.transpose((0, 2, 1))
