@@ -80,13 +80,13 @@ class GMDataset(Dataset):
         # pyg_graph1 = self.to_pyg_graph(A1, P1)
         # pyg_graph2 = self.to_pyg_graph(A2, P2)
 
-        ret_dict = {'Ps': [paddle.to_tensor(x) for x in [P1, P2]],
-                    'ns': [paddle.to_tensor(x) for x in [n1, n2]],
-                    'es': [paddle.to_tensor(x) for x in [e1, e2]],
+        ret_dict = {'Ps': [paddle.to_tensor(data=x, dtype='float32') for x in [P1, P2]],
+                    'ns': [paddle.to_tensor(data=x, dtype='float32') for x in [n1, n2]],
+                    'es': [paddle.to_tensor(data=x, dtype='float32') for x in [e1, e2]],
                     'gt_perm_mat': perm_mat,
-                    'Gs': [paddle.to_tensor(x) for x in [G1, G2]],
-                    'Hs': [paddle.to_tensor(x) for x in [H1, H2]],
-                    'As': [paddle.to_tensor(x) for x in [A1, A2]],
+                    'Gs': [paddle.to_tensor(data=x, dtype='float32') for x in [G1, G2]],
+                    'Hs': [paddle.to_tensor(data=x, dtype='float32') for x in [H1, H2]],
+                    'As': [paddle.to_tensor(data=x, dtype='float32') for x in [A1, A2]],
                     # 'pyg_graphs': [pyg_graph1, pyg_graph2],
                     'cls': [str(x) for x in cls],
                     'id_list': id_list,
