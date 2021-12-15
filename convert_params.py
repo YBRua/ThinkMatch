@@ -10,16 +10,17 @@ from models.PCA.model_pdl import Net as pdlPCA
 from models.CIE.model import Net as TorchCIE
 from models.CIE.model_pdl import Net as PaddleCIE
 from src.utils.model_sl import load_model
+
 from src.utils.config import cfg
 
 
 def convert_params(model_th, model_pd, model_path):
     """
-    convert pytorch model's parameters into paddlepaddle model, then save as .pdparams
+    convert pytorch model's parameters into paddlepaddle model
+    then save the converted model params as .pdparams
     :param model_th: pytorch model which has loaded pretrained parameters.
     :param model_pd: paddlepaddle dygraph model
     :param model_path: paddlepaddle dygraph model path
-    :return:
     """
     state_dict_th = model_th.state_dict()
     state_dict_pd = model_pd.state_dict()
@@ -72,11 +73,11 @@ def convert_params(model_th, model_pd, model_path):
     print("model converted successfully.")
 
 
-def vgg_convert():
+def vgg_convert(paddle_param_path):
     with fluid.dygraph.guard():
         model_th = models.vgg16_bn(pretrained=True)
         model_pd = vision.models.vgg16(pretrained=False, batch_norm=True)
-        model_path = "./vgg16_bn"
+        model_path = paddle_param_path
         print(model_th.state_dict().keys())
         print(len(model_th.state_dict().keys()))
         print(model_pd.state_dict().keys())
@@ -84,14 +85,14 @@ def vgg_convert():
         convert_params(model_th, model_pd, model_path)
 
 
-def cie_convert():
+def cie_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_torch = TorchCIE()
         model_paddle = PaddleCIE()
         load_model(
             model_torch,
-            "pretrained/pretrained_params_vgg16_cie_voc.pt")
-        model_path = "./pretrained/paddle_vgg16_cie_voc"
+            torch_param_path)
+        model_path = paddle_param_path
         print('## Torch State Dict:', len(model_torch.state_dict().keys()))
         print(*model_torch.state_dict().keys(), sep='\n')
         print('## Paddle State Dict:', len(model_paddle.state_dict().keys()))
@@ -99,7 +100,7 @@ def cie_convert():
         convert_params(model_torch, model_paddle, model_path)
 
 
-def pca_convert():
+def pca_convert(torch_param_path, paddle_param_path):
     '''
     If u want to convert PCA
     please move this file to the parent dir
@@ -107,15 +108,13 @@ def pca_convert():
     with fluid.dygraph.guard():
         model_th = tchPCA()
         model_pd = pdlPCA()
-        # load_model(model_th, "output/vgg16_pca_voc/params/params_0020.pt")
-        load_model(model_th, "pretrained/pretrained_params_vgg16_pca_voc.pt")
-        # load_model(model_th , 'share_param.pt')
-        model_path = "./pretrained/new_vgg16_pca_voc"
+        load_model(model_th, torch_param_path)
+        model_path = paddle_param_path
         print('Torch State Dict:', len(model_th.state_dict().keys()))
         print(*model_th.state_dict().keys(), sep=' ')
         print('Paddle State Dict:', len(model_pd.state_dict().keys()))
         print(*model_pd.state_dict().keys(), sep=' ')
-        
+
         convert_params(model_th, model_pd, model_path)
 
 
@@ -126,6 +125,18 @@ if __name__ == '__main__':
 
     args = parse_args(
         'Deep learning of graph matching training & evaluation code.')
-    # pca_convert()
-    cie_convert()
-    # vgg_convert()
+    INPUT_PATH = cfg.PRETRAINED_PATH
+    OUTPUT_PATH = args.output_path
+    ARCH = args.model_arch
+
+    if OUTPUT_PATH is None or len(OUTPUT_PATH) == 0:
+        print('No output path specified')
+        print('Default to `./paddle_model.pdparams`')
+        OUTPUT_PATH = './paddle_model.pdparams'
+
+    if 'CIE' in ARCH:
+        cie_convert(INPUT_PATH, OUTPUT_PATH)
+    if 'PCA' in ARCH:
+        pca_convert(INPUT_PATH, OUTPUT_PATH)
+    if 'VGG16BN' in ARCH:
+        vgg_convert(OUTPUT_PATH)

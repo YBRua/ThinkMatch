@@ -5,12 +5,27 @@ from pathlib import Path
 
 def parse_args(description):
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('--cfg', '--config', dest='cfg_file', action='append',
-                        help='an optional config file', default=None, type=str)
-    parser.add_argument('--batch', dest='batch_size',
-                        help='batch size', default=None, type=int)
-    parser.add_argument('--epoch', dest='epoch',
-                        help='epoch number', default=None, type=int)
+    parser.add_argument(
+        '--cfg', '--config', dest='cfg_file', action='append',
+        help='an optional config file', default=None, type=str)
+    parser.add_argument(
+        '--batch', dest='batch_size',
+        help='batch size', default=None, type=int)
+    parser.add_argument(
+        '--epoch', dest='epoch',
+        help='epoch number', default=None, type=int)
+    parser.add_argument(
+        '--model_arch', '-m', type=str, default=None,
+        help='For torch-to-paddle conversion.'
+        + ' Model architecture.')
+    parser.add_argument(
+        '--input_path', '-i', type=str, default=None,
+        help='For torch-to-paddle conversion.'
+        + ' Input pretrained torch model parameters')
+    parser.add_argument(
+        '--output_path', '-o', type=str, default=None,
+        help='For torch-to-paddle conversion.'
+        + ' Output converted paddle model parameters')
     args = parser.parse_args()
 
     # load cfg from file
@@ -24,6 +39,13 @@ def parse_args(description):
     if args.epoch is not None:
         cfg_from_list(['TRAIN.START_EPOCH', args.epoch,
                       'EVAL.EPOCH', args.epoch])
+
+    # for convert_params
+    # override pretrained params
+    if args.input_path is not None:
+        cfg.PRETRAINED_PATH = args.input_path
+    if args.model_arch is not None:
+        cfg.MODULE = args.model_arch
 
     assert len(
         cfg.MODULE) != 0,\

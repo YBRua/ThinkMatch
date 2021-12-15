@@ -3,7 +3,7 @@ DATASET_NAME: willow
 
 DATASET_FULL_NAME: WillowObject
 
-MODULE: models.CIE.model
+MODULE: models.CIE.model_pdl
 
 BACKBONE: VGG16_bn
 
@@ -12,7 +12,7 @@ DATALOADER_NUM: 2
 
 RANDOM_SEED: 123
 
-# PRETRAINED_PATH: ThinkMatchPretrained/pretrained_params_vgg16_cie_willow.pt
+PRETRAINED_PATH: ./pretrained/paddle_vgg16_cie_willow.pdparams
 
 # available GPU ids
 GPUS:
