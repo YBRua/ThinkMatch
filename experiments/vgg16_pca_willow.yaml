@@ -1,11 +1,9 @@
-# VGG16 model with Willow Object dataset
-
 MODEL_NAME: vgg16_pca
 DATASET_NAME: willow
 
 DATASET_FULL_NAME: WillowObject
 
-MODULE: PCA.model
+MODULE: models.PCA.model
 
 BACKBONE: VGG16_bn
 
@@ -13,41 +11,47 @@ BATCH_SIZE: 8
 
 RANDOM_SEED: 123
 
+# PRETRAINED_PATH: ThinkMatchPretrained/pretrained_params_vgg16_pca_willow.pt
+
 # available GPU ids
 GPUS:
   - 0
-#  - 1
 
-# Pairwise data configuration
-PAIR:
+# Problem configuration
+PROBLEM:
+  TYPE: 2GM
   RESCALE:  # rescaled image size
     - 256
     - 256
-  GT_GRAPH_CONSTRUCT: tri
-  REF_GRAPH_CONSTRUCT: tri
+  FILTER: 'intersection'
+
+# Graph construction settings
+GRAPH:
+  SRC_GRAPH_CONSTRUCT: tri
+  TGT_GRAPH_CONSTRUCT: tri
+  SYM_ADJACENCY: True
 
 # Willow object class dataset configuration
-WILLOW:
+WillowObject:
   TRAIN_NUM: 20  # number of images for training set
-  TRAIN_OFFSET: 0  # the starting index of training set
+  SPLIT_OFFSET: 0  # the starting index of training set
 
 # Training settings
 TRAIN:
   # start, end epochs
-  START_EPOCH: 20
+  START_EPOCH: 0
   NUM_EPOCHS: 30
 
   # learning rate
-  LR: 1.0e-4
+  LR: 1.0e-3
   MOMENTUM: 0.9
   LR_DECAY: 0.1
-  LR_STEP:  # (in epochs)
-    - 10
-    - 20
+  LR_STEP:
+    - 10  # (in epochs)
 
-  EPOCH_ITERS: 1000  # iterations per epoch
+  EPOCH_ITERS: 200  # iterations per epoch
 
-# Evaluation settings and PCK metric
+# Evaluation settings
 EVAL:
   EPOCH: 30  # epoch to be tested
   SAMPLES: 100  # number of tested pairs for each class
@@ -55,8 +59,8 @@ EVAL:
 # PCA model parameters
 PCA:
   FEATURE_CHANNEL: 512
-  BS_ITER_NUM: 20
-  BS_EPSILON: 1.0e-10
-  VOTING_ALPHA: 20.
+  SK_ITER_NUM: 20
+  SK_EPSILON: 1.0e-10
+  SK_TAU: 0.05
   GNN_FEAT: 2048
   GNN_LAYER: 2

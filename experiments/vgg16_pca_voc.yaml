@@ -1,31 +1,37 @@
-# VGG16 model with Pascal VOC dataset
-
 MODEL_NAME: vgg16_pca
 DATASET_NAME: voc
 
 DATASET_FULL_NAME: PascalVOC
 
-MODULE: PCA.model
+MODULE: models.PCA.model
 
 BACKBONE: VGG16_bn
 
 BATCH_SIZE: 8
-DATALOADER_NUM: 4
+DATALOADER_NUM: 2
 
-RANDOM_SEED: 7
+RANDOM_SEED: 123
+
+# PRETRAINED_PATH: ThinkMatchPretrained/pretrained_params_vgg16_pca_voc.pt
 
 # available GPU ids
 GPUS:
   - 0
 #  - 1
 
-# Pairwise data configuration
-PAIR:
+# Problem configuration
+PROBLEM:
+  TYPE: 2GM
   RESCALE:  # rescaled image size
     - 256
     - 256
-  GT_GRAPH_CONSTRUCT: tri
-  REF_GRAPH_CONSTRUCT: tri
+  FILTER: 'intersection'
+
+# Graph construction settings
+GRAPH:
+  SRC_GRAPH_CONSTRUCT: tri
+  TGT_GRAPH_CONSTRUCT: tri
+  SYM_ADJACENCY: True
 
 # Training settings
 TRAIN:
@@ -36,26 +42,29 @@ TRAIN:
   LOSS_FUNC: perm
 
   # learning rate
-  LR: 1.1e-3
+  LR: 2.0e-3 #1.0e-3
   MOMENTUM: 0.9
   LR_DECAY: 0.1
   LR_STEP:  # (in epochs)
+    - 2
+    - 6
     - 10
 
   EPOCH_ITERS: 2000  # iterations per epoch
 
   CLASS: none
 
-# Evaluation settings and PCK metric
+# Evaluation settings
 EVAL:
-  EPOCH: 20  # epoch to be tested
+  EPOCH: 30  # epoch to be tested
   SAMPLES: 1000  # number of tested pairs for each class
 
 # PCA model parameters
 PCA:
   FEATURE_CHANNEL: 512
-  BS_ITER_NUM: 20
-  BS_EPSILON: 1.0e-10
-  VOTING_ALPHA: 20.
+  SK_ITER_NUM: 20
+  SK_EPSILON: 1.0e-10
+  CROSS_ITER: False
+  SK_TAU: 0.05
   GNN_FEAT: 2048
   GNN_LAYER: 2
