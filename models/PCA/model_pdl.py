@@ -2,41 +2,65 @@ import paddle
 import paddle.nn as nn
 
 from src.lap_solvers_pdl.sinkhorn import Sinkhorn
-from src.utils_pdl.voting_layer import Voting
-from models.GMN.displacement_layer_pdl import Displacement
 from src.utils_pdl.feature_align import feature_align
 from models.PCA.gconv_pdl import Siamese_Gconv
 from models.PCA.affinity_layer_pdl import Affinity
+from src.lap_solvers.hungarian import hungarian
 
 from src.utils.config import cfg
 
 import src.utils_pdl.backbone
-CNN = eval('src.utils_pdl.backbone.{}'.format(cfg.BACKBONE))
+CNN = eval(f'src.utils_pdl.backbone.{cfg.BACKBONE}')
 
 
 class Net(CNN):
     def __init__(self):
         super(Net, self).__init__()
-        self.bi_stochastic = Sinkhorn(max_iter=cfg.PCA.BS_ITER_NUM, epsilon=cfg.PCA.BS_EPSILON)
-        self.voting_layer = Voting(alpha=cfg.PCA.VOTING_ALPHA)
-        self.displacement_layer = Displacement()
-        self.l2norm = nn.LocalResponseNorm(cfg.PCA.FEATURE_CHANNEL * 2, alpha=cfg.PCA.FEATURE_CHANNEL * 2, beta=0.5, k=0)
+        self.sinkhorn = Sinkhorn(
+            max_iter=cfg.PCA.SK_ITER_NUM,
+            epsilon=cfg.PCA.SK_EPSILON,
+            tau=cfg.PCA.SK_TAU)
+        self.l2norm = nn.LocalResponseNorm(
+            cfg.PCA.FEATURE_CHANNEL * 2,
+            alpha=cfg.PCA.FEATURE_CHANNEL * 2,
+            beta=0.5, k=0)
         self.gnn_layer = cfg.PCA.GNN_LAYER
-        self.gnn_layer_list = nn.LayerList()
-        self.aff_layer_list = nn.LayerList()
         for i in range(self.gnn_layer):
             if i == 0:
-                gnn_layer = Siamese_Gconv(cfg.PCA.FEATURE_CHANNEL * 2, cfg.PCA.GNN_FEAT)
+                gnn_layer = Siamese_Gconv(
+                    cfg.PCA.FEATURE_CHANNEL * 2,
+                    cfg.PCA.GNN_FEAT)
             else:
-                gnn_layer = Siamese_Gconv(cfg.PCA.GNN_FEAT, cfg.PCA.GNN_FEAT)
-            self.gnn_layer_list.append(gnn_layer)
-            self.aff_layer_list.append(Affinity(cfg.PCA.GNN_FEAT))
-            if i == self.gnn_layer - 2: 
-                # only second last layer will have cross-graph module
-                self.cross_layer = (nn.Linear(cfg.PCA.GNN_FEAT * 2, cfg.PCA.GNN_FEAT))
+                gnn_layer = Siamese_Gconv(
+                    cfg.PCA.GNN_FEAT,
+                    cfg.PCA.GNN_FEAT)
+            self.add_module(
+                f'gnn_layer_{i}', gnn_layer)
+            self.add_module(
+                f'affinity_{i}', Affinity(cfg.PCA.GNN_FEAT))
+            # only second last layer will have cross-graph module
+            if i == self.gnn_layer - 2:
+                self.add_module(
+                    f'cross_graph_{i}',
+                    nn.Linear(cfg.PCA.GNN_FEAT * 2, cfg.PCA.GNN_FEAT))
+        self.cross_iter = cfg.PCA.CROSS_ITER
+        self.cross_iter_num = cfg.PCA.CROSS_ITER_NUM
+        self.rescale = cfg.PROBLEM.RESCALE
 
-    def forward(self, src, tgt, P_src, P_tgt, G_src, G_tgt, H_src, H_tgt, ns_src, ns_tgt, K_G, K_H, type='img'):
-        if type == 'img' or type == 'image':
+    def add_module(self, key, module):
+        setattr(self, key, module)
+
+    def reload_backbone(self):
+        self.node_layers, self.edge_layers = self.get_backbone(True)
+
+    def forward(self, data_dict, **kwargs):
+        if 'images' in data_dict:
+            # real image data
+            src, tgt = data_dict['images']
+            P_src, P_tgt = data_dict['Ps']
+            ns_src, ns_tgt = data_dict['ns']
+            A_src, A_tgt = data_dict['As']
+
             # extract feature
             src_node = self.node_layers(src)
             src_edge = self.edge_layers(src_node)
@@ -50,38 +74,81 @@ class Net(CNN):
             tgt_edge = self.l2norm(tgt_edge)
 
             # arrange features
-            U_src = feature_align(src_node, P_src, ns_src, cfg.PAIR.RESCALE)
-            F_src = feature_align(src_edge, P_src, ns_src, cfg.PAIR.RESCALE)
-            U_tgt = feature_align(tgt_node, P_tgt, ns_tgt, cfg.PAIR.RESCALE)
-            F_tgt = feature_align(tgt_edge, P_tgt, ns_tgt, cfg.PAIR.RESCALE)
-        elif type == 'feat' or type == 'feature':
+            U_src = feature_align(src_node, P_src, ns_src, self.rescale)
+            F_src = feature_align(src_edge, P_src, ns_src, self.rescale)
+            U_tgt = feature_align(tgt_node, P_tgt, ns_tgt, self.rescale)
+            F_tgt = feature_align(tgt_edge, P_tgt, ns_tgt, self.rescale)
+        elif 'features' in data_dict:
+            # synthetic data
+            src, tgt = data_dict['features']
+            ns_src, ns_tgt = data_dict['ns']
+            A_src, A_tgt = data_dict['As']
+
             U_src = src[:, :src.shape[1] // 2, :]
             F_src = src[:, src.shape[1] // 2:, :]
             U_tgt = tgt[:, :tgt.shape[1] // 2, :]
             F_tgt = tgt[:, tgt.shape[1] // 2:, :]
         else:
-            raise ValueError('unknown type string {}'.format(type))
+            raise ValueError('Unknown data type for this model.')
 
-        # adjacency matrices
-        A_src = paddle.bmm(G_src, H_src.transpose((0,2,1)))
-        A_tgt = paddle.bmm(G_tgt, H_tgt.transpose((0,2,1)))
+        emb1 = paddle.concat((U_src, F_src), dim=1).transpose((0, 2, 1))
+        emb2 = paddle.concat((U_tgt, F_tgt), axis=1).transpose((0, 2, 1))
+        ss = []
 
-        emb1, emb2 = paddle.concat((U_src, F_src), axis=1).transpose((0,2,1)), paddle.concat((U_tgt, F_tgt), axis=1).transpose((0,2,1))
+        if not self.cross_iter:
+            # Vanilla PCA-GM
+            for i in range(self.gnn_layer):
+                gnn_layer = getattr(self, f'gnn_layer_{i}')
+                emb1, emb2 = gnn_layer([A_src, emb1], [A_tgt, emb2])
+                affinity = getattr(self, f'affinity_{i}')
+                s = affinity(emb1, emb2)
+                s = self.sinkhorn(s, ns_src, ns_tgt, dummy_row=True)
 
-        for i in range(self.gnn_layer):
-            # gnn layer
-            emb1, emb2 = self.gnn_layer_list[i]([A_src, emb1], [A_tgt, emb2])
-            # affinity layer
-            s = self.aff_layer_list[i](emb1, emb2)
-            # New sinkhorn no need voting
-            #s = self.voting_layer(s, ns_src, ns_tgt)
-            s = self.bi_stochastic(s, ns_src, ns_tgt)
+                ss.append(s)
 
-            if i == self.gnn_layer - 2:
-                emb1_new = self.cross_layer(paddle.concat((emb1, paddle.bmm(s, emb2)), axis=-1))
-                emb2_new = self.cross_layer(paddle.concat((emb2, paddle.bmm(s.transpose((0,2,1)), emb1)), axis=-1))
-                emb1 = emb1_new
-                emb2 = emb2_new
+                if i == self.gnn_layer - 2:
+                    cross_graph = getattr(self, f'cross_graph_{i}')
+                    new_emb1 = cross_graph(
+                        paddle.concat(
+                            (emb1, paddle.bmm(s, emb2)),
+                            dim=-1))
+                    new_emb2 = cross_graph(
+                        paddle.concat(
+                            (emb2, paddle.bmm(s.transpose((0, 2, 1)), emb1)),
+                            dim=-1))
+                    emb1 = new_emb1
+                    emb2 = new_emb2
+        else:
+            # IPCA-GM
+            for i in range(self.gnn_layer - 1):
+                gnn_layer = getattr(self, f'gnn_layer_{i}')
+                emb1, emb2 = gnn_layer([A_src, emb1], [A_tgt, emb2])
 
-        d, _ = self.displacement_layer(s, P_src, P_tgt)
-        return s, d
+            emb1_0, emb2_0 = emb1, emb2
+            s = paddle.zeros(emb1.shape[0], emb1.shape[1], emb2.shape[1])
+
+            for x in range(self.cross_iter_num):
+                i = self.gnn_layer - 2
+                cross_graph = getattr(self, f'cross_graph_{i}')
+                emb1 = cross_graph(
+                    paddle.concat(
+                        (emb1_0, paddle.bmm(s, emb2_0)),
+                        dim=-1))
+                emb2 = cross_graph(
+                    paddle.concat(
+                        (emb2_0, paddle.bmm(s.transpose((0, 2, 1)), emb1_0)),
+                        dim=-1))
+
+                i = self.gnn_layer - 1
+                gnn_layer = getattr(self, f'gnn_layer_{i}')
+                emb1, emb2 = gnn_layer([A_src, emb1], [A_tgt, emb2])
+                affinity = getattr(self, f'affinity_{i}')
+                s = affinity(emb1, emb2)
+                s = self.sinkhorn(s, ns_src, ns_tgt, dummy_row=True)
+                ss.append(s)
+
+        data_dict.update({
+            'ds_mat': ss[-1],
+            'perm_mat': hungarian(ss[-1], ns_src, ns_tgt)
+        })
+        return data_dict
