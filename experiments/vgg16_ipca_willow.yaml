@@ -3,7 +3,7 @@ DATASET_NAME: willow
 
 DATASET_FULL_NAME: WillowObject
 
-MODULE: models.PCA.model
+MODULE: models.PCA.model_pdl
 
 BACKBONE: VGG16_bn
 
