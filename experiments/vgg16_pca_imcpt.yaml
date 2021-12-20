@@ -12,6 +12,8 @@ DATALOADER_NUM: 2
 
 RANDOM_SEED: 123
 
+PRETRAINED_PATH: ./pretrained/paddle_vgg16_pca_imcpt.pdparams
+
 # Only support inference on one GPU
 GPU: 0
 

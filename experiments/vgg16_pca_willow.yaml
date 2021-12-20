@@ -11,7 +11,7 @@ BATCH_SIZE: 8
 
 RANDOM_SEED: 123
 
-# PRETRAINED_PATH: ThinkMatchPretrained/pretrained_params_vgg16_pca_willow.pt
+PRETRAINED_PATH: ./pretrained/paddle_vgg16_pca_willow.pdparams
 
 # Only support inference on one GPU
 GPU: 0

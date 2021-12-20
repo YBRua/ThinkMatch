@@ -12,7 +12,7 @@ DATALOADER_NUM: 2
 
 RANDOM_SEED: 123
 
-# PRETRAINED_PATH: ThinkMatchPretrained/pretrained_params_vgg16_pca_voc.pt
+PRETRAINED_PATH: ./pretrained/paddle_vgg16_pca_voc.pdparams
 
 # Only support inference on one GPU
 GPU: 0
