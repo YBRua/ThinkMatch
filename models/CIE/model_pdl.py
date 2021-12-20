@@ -25,22 +25,6 @@ class Net(CNN):
             alpha=cfg.CIE.FEATURE_CHANNEL * 2,
             beta=0.5, k=0)
 
-        # currently only the default architecture
-        # with 2 GNN layers is supported
-        # self.gnn_layer_0 = Siamese_ChannelIndependentConv(
-        #     cfg.CIE.FEATURE_CHANNEL * 2, cfg.CIE.GNN_FEAT, 1)
-        # self.gnn_layer_1 = Siamese_ChannelIndependentConv(
-        #     cfg.CIE.GNN_FEAT, cfg.CIE.GNN_FEAT, cfg.CIE.GNN_FEAT)
-
-        # self.affinity_0 = Affinity(cfg.CIE.GNN_FEAT)
-        # self.affinity_1 = Affinity(cfg.CIE.GNN_FEAT)
-
-        # self.cross_graph_0 = nn.Linear(
-        #     cfg.CIE.GNN_FEAT * 2, cfg.CIE.GNN_FEAT)
-        # self.cross_graph_edge_0 = nn.Linear(
-        #     cfg.CIE.GNN_FEAT * 2, cfg.CIE.GNN_FEAT)
-
-        # TODO: Add support for variable number of GNN layers
         self.gnn_layer = cfg.CIE.GNN_LAYER  # numbur of GNN layers
         for i in range(self.gnn_layer):
             if i == 0:
@@ -49,15 +33,18 @@ class Net(CNN):
             else:
                 gnn_layer = Siamese_ChannelIndependentConv(
                     cfg.CIE.GNN_FEAT, cfg.CIE.GNN_FEAT, cfg.CIE.GNN_FEAT)
-            self.add_module('gnn_layer_{}'.format(i), gnn_layer)
-            self.add_module('affinity_{}'.format(
-                i), Affinity(cfg.CIE.GNN_FEAT))
+            self.add_module(
+                'gnn_layer_{}'.format(i), gnn_layer)
+            self.add_module(
+                'affinity_{}'.format(i), Affinity(cfg.CIE.GNN_FEAT))
             # only second last layer will have cross-graph module
             if i == self.gnn_layer - 2:
-                self.add_module('cross_graph_{}'.format(i), nn.Linear(
-                    cfg.CIE.GNN_FEAT * 2, cfg.CIE.GNN_FEAT))
-                self.add_module('cross_graph_edge_{}'.format(
-                    i), nn.Linear(cfg.CIE.GNN_FEAT * 2, cfg.CIE.GNN_FEAT))
+                self.add_module(
+                    'cross_graph_{}'.format(i),
+                    nn.Linear(cfg.CIE.GNN_FEAT * 2, cfg.CIE.GNN_FEAT))
+                self.add_module(
+                    'cross_graph_edge_{}'.format(i),
+                    nn.Linear(cfg.CIE.GNN_FEAT * 2, cfg.CIE.GNN_FEAT))
 
         self.rescale = cfg.PROBLEM.RESCALE
 

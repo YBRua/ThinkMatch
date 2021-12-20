@@ -50,7 +50,7 @@ def convert_params(model_th, model_pd, model_path):
             key_th = key_pd.replace("_variance", "running_var")
 
         # if "fc" in key_th or "classifier":
-        if "fc" in key_th:
+        if "fc" in key_th or "cross_graph" in key_th:  # ad-hoc fix for CIE
             if len(state_dict_pd[key_pd].shape) < 4:
                 state_dict[key_pd] = state_dict_th[key_th].numpy().astype(
                     "float32").transpose()
@@ -67,7 +67,8 @@ def convert_params(model_th, model_pd, model_path):
             num_batches_tracked_th == len(state_dict_th.keys())
     except Exception:
         print(
-            f"The number of num_batches_tracked is {num_batches_tracked_th} in pytorch model.")
+            "The number of num_batches_tracked is"
+            + f" {num_batches_tracked_th} in pytorch model.")
         print("Exception: there are other layer parameter which not converted")
 
     model_pd.set_dict(state_dict)
@@ -134,9 +135,7 @@ def pca_convert(torch_param_path, paddle_param_path):
 
 
 if __name__ == '__main__':
-    from src.utils.dup_stdout_manager import DupStdoutFileManager
     from src.utils.parse_args import parse_args
-    from src.utils.print_easydict import print_easydict
 
     args = parse_args(
         'Deep learning of graph matching training & evaluation code.')
@@ -149,6 +148,8 @@ if __name__ == '__main__':
         print('Default to `./paddle_model.pdparams`')
         OUTPUT_PATH = './paddle_model.pdparams'
 
+    if ARCH is None:
+        raise ValueError('Please specify model architecture by `-m`')
     elif 'CIE' in ARCH:
         cie_convert(INPUT_PATH, OUTPUT_PATH)
     elif 'PCA' in ARCH:
