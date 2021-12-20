@@ -1,5 +1,4 @@
 import paddle
-from paddle.fluid.layers.nn import transpose
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.vision.models.resnet import resnet34
@@ -42,8 +41,9 @@ def my_align(raw_feature, P, ori_size: tuple):
 
 
 def batch_features(embeddings, num_vertices):
-    res = paddle.concat([embedding[:, :num_v]
-                    for embedding, num_v in zip(embeddings, num_vertices)], axis=-1)
+    res = paddle.concat([
+        embedding[:, :num_v]
+        for embedding, num_v in zip(embeddings, num_vertices)], axis=-1)
     return res.transpose((1, 0))
 
 
@@ -59,8 +59,7 @@ def unbatch_features(orig, embeddings, num_vertices):
 class Net(nn.Layer):
     def __init__(self):
         super().__init__()
-        self.resnet = resnet34(False)  # UNet(3, 2)
-        # self.unet.load_state_dict(torch.load("unet_carvana_scale0.5_epoch1.pth"))
+        self.resnet = resnet34(pretrained=False)
         feature_lat = 64 + (64 + 128 + 256 + 512 + 512)
         self.pix2pt_proj = ResCls(1, feature_lat, 512, 256)
         self.pix2cl_proj = ResCls(1, 1024, 512, 128)
@@ -70,7 +69,9 @@ class Net(nn.Layer):
         self.rescale = cfg.PROBLEM.RESCALE
         self.pn = p2_smaller_pdl.get_model(256, 128, 64)
         self.sinkhorn = Sinkhorn(
-            max_iter=cfg.IGM.SK_ITER_NUM, tau=self.tau, epsilon=cfg.IGM.SK_EPSILON
+            max_iter=cfg.IGM.SK_ITER_NUM,
+            tau=self.tau,
+            epsilon=cfg.IGM.SK_EPSILON
         )
         self.backbone_params = list(self.resnet.parameters())
 
@@ -100,10 +101,10 @@ class Net(nn.Layer):
     def halo(self, feat_srcs, feat_tgts, P_src, P_tgt):
         U_src = paddle.concat([
             my_align(feat_src, P_src, self.rescale) for feat_src in feat_srcs
-        ], 1)
+        ], axis=1)
         U_tgt = paddle.concat([
             my_align(feat_tgt, P_tgt, self.rescale) for feat_tgt in feat_tgts
-        ], 1)
+        ], axis=1)
         glob_src = feat_srcs[-1].flatten(1).unsqueeze(-1)
         glob_tgt = feat_tgts[-1].flatten(1).unsqueeze(-1)
         # F_src = torch.cat([
@@ -114,8 +115,8 @@ class Net(nn.Layer):
         #     U_tgt,
         #     glob_src.expand(*glob_src.shape[:-1], U_tgt.shape[-1])
         # ], 1)
-        ghalo_src = paddle.concat((glob_src, glob_tgt), 1)
-        ghalo_tgt = paddle.concat((glob_tgt, glob_src), 1)
+        ghalo_src = paddle.concat((glob_src, glob_tgt), axis=1)
+        ghalo_tgt = paddle.concat((glob_tgt, glob_src), axis=1)
         return U_src, U_tgt, ghalo_src, ghalo_tgt
 
     def edge_activations(self, feats, F_, P, n):
@@ -129,27 +130,38 @@ class Net(nn.Layer):
         ).flatten(2)  # B2CN^2
         E = paddle.concat([
             my_align(feat, ep, self.rescale) for feat in feats
-        ], 1)  # BCN^2
-        CE = paddle.concat([L, E], 1)
+        ], axis=1)  # BCN^2
+        CE = paddle.concat([L, E], axis=1)
         mask = paddle.arange(
             F_.shape[-1]).expand((len(F_), F_.shape[-1])) < n.unsqueeze(-1)
         # BN
         mask = paddle.logical_and(mask.unsqueeze(-2), mask.unsqueeze(-1))
         mask = paddle.cast(mask, 'float32')
-        return (F.sigmoid(self.edge_gate(CE)) * F.normalize(self.edge_proj(CE), axis=1) * mask.flatten(1).unsqueeze(1)).reshape((F_.shape[0], -1, F_.shape[-1], F_.shape[-1]))
+        return (
+            F.sigmoid(self.edge_gate(CE))
+            * F.normalize(self.edge_proj(CE), axis=1)
+            * mask.flatten(1).unsqueeze(1))\
+            .reshape((F_.shape[0], -1, F_.shape[-1], F_.shape[-1]))
 
-    def points(self, y_src, y_tgt, P_src, P_tgt, n_src, n_tgt, e_src, e_tgt, g):
+    def points(
+            self,
+            y_src, y_tgt,
+            P_src, P_tgt,
+            n_src, n_tgt,
+            e_src, e_tgt, g):
         resc = paddle.to_tensor(self.rescale)
         P_src, P_tgt = P_src / resc, P_tgt / resc
         P_src, P_tgt = P_src.transpose((0, 2, 1)), P_tgt.transpose((0, 2, 1))
+        # not used during inference
         # if self.training:
         #     P_src = P_src + torch.rand_like(P_src)[..., :1] * 0.2 - 0.1
         #     P_tgt = P_tgt + torch.rand_like(P_tgt)[..., :1] * 0.2 - 0.1
-        key_mask_src = paddle.arange(y_src.shape[-1]).expand(
-            (len(y_src), y_src.shape[-1])) < n_src.unsqueeze(-1)
-        key_mask_tgt = paddle.arange(y_tgt.shape[-1]).expand(
-            (len(y_tgt), y_tgt.shape[-1])) < n_tgt.unsqueeze(-1)
-        key_mask_cat = paddle.concat((key_mask_src, key_mask_tgt), -1).unsqueeze(1)
+        key_mask_src = paddle.arange(y_src.shape[-1])\
+            .expand((len(y_src), y_src.shape[-1])) < n_src.unsqueeze(-1)
+        key_mask_tgt = paddle.arange(y_tgt.shape[-1])\
+            .expand((len(y_tgt), y_tgt.shape[-1])) < n_tgt.unsqueeze(-1)
+        key_mask_cat = paddle.concat(
+            (key_mask_src, key_mask_tgt), -1).unsqueeze(1)
         P_src = paddle.concat((P_src, paddle.zeros_like(P_src[:, :1])), 1)
         P_tgt = paddle.concat((P_tgt, paddle.ones_like(P_tgt[:, :1])), 1)
         pcd = paddle.concat((P_src, P_tgt), -1)
@@ -160,15 +172,15 @@ class Net(nn.Layer):
         ], dtype=e_src.dtype)
         e_cat[..., :e_src.shape[2], :e_src.shape[3]] = e_src
         e_cat[..., e_src.shape[2]:, e_src.shape[3]:] = e_tgt
-        r1, r2 = self.pn(paddle.concat((pcd, y_cat), 1) * key_mask_cat, e_cat, g)
+        r1, r2 = self.pn(
+            paddle.concat((pcd, y_cat), 1) * key_mask_cat,
+            e_cat, g)
         return r1[:, :, :y_src.shape[-1]], r2[:, :, :y_src.shape[-1]]
 
     def forward(self, data_dict, **kwargs):
         src, tgt = data_dict['images']
         P_src, P_tgt = data_dict['Ps']
         ns_src, ns_tgt = data_dict['ns']
-        # print(ns_src.max(), ns_tgt.max())
-        # print(P_src[0], P_tgt[0])
 
         feat_srcs, feat_tgts = [], []
         for feat in self.encode(paddle.concat([src, tgt])):
@@ -189,14 +201,6 @@ class Net(nn.Layer):
         y_src, y_tgt = F.normalize(y_src, axis=1), F.normalize(y_tgt, axis=1)
         g_src, g_tgt = F.normalize(g_src, axis=1), F.normalize(g_tgt, axis=1)
 
-        '''G_src, G_tgt = data_dict['pyg_graphs']
-        G_src.x = batch_features(y_src, ns_src)
-        G_src = self.sconv(G_src)
-        G_tgt.x = batch_features(y_tgt, ns_tgt)
-        G_tgt = self.sconv(G_tgt)
-        y_src = unbatch_features(y_src, G_src.x, ns_src)
-        y_tgt = unbatch_features(y_tgt, G_tgt.x, ns_tgt)'''
-
         ff_src, folding_src = self.points(
             y_src, y_tgt, P_src, P_tgt, ns_src, ns_tgt, ea_src, ea_tgt, g_src)
         ff_tgt, folding_tgt = self.points(
@@ -207,6 +211,7 @@ class Net(nn.Layer):
         #     folding_src,
         #     folding_tgt
         # )
+        # workaround for paddle.einsum (added in 2.2, but we are in 2.1)
         sim = paddle.bmm(folding_src.transpose((0, 2, 1)), folding_tgt)
         data_dict['ds_mat'] = self.sinkhorn(
             sim, ns_src, ns_tgt, dummy_row=True)

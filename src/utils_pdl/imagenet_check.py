@@ -1,9 +1,5 @@
 import argparse
-import os
-import random
-import shutil
 import time
-import warnings
 from tqdm import tqdm
 
 import paddle

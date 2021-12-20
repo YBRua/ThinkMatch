@@ -1,9 +1,14 @@
 import paddle
 from paddle import Tensor
-from .pdl_device_trans import place2int 
+from .pdl_device_trans import place2int
 
 
-def feature_align(raw_feature: Tensor, P: Tensor, ns_t: Tensor, ori_size: tuple, device=None):
+def feature_align(
+        raw_feature: Tensor,
+        P: Tensor,
+        ns_t: Tensor,
+        ori_size: tuple,
+        device=None):
     """
     Perform feature align from the raw feature map.
     :param raw_feature: raw feature map
@@ -19,24 +24,40 @@ def feature_align(raw_feature: Tensor, P: Tensor, ns_t: Tensor, ori_size: tuple,
     batch_num = raw_feature.shape[0]
     channel_num = raw_feature.shape[1]
     n_max = P.shape[1]
-    #n_max = 0
-    #for idx in range(batch_num):
-    #    n_max = max(ns_t[idx], n_max)
+    # n_max = 0
+    # for idx in range(batch_num):
+    #     n_max = max(ns_t[idx], n_max)
 
     ori_size = paddle.to_tensor(ori_size, dtype='float32', place=device)
-    F = paddle.zeros([batch_num, channel_num, n_max], dtype='float32').cuda(place2int(device))
+    F = paddle.zeros(
+        [batch_num, channel_num, n_max],
+        dtype='float32').cuda(place2int(device))
     F.stop_gradient = False
     for idx, feature in enumerate(raw_feature):
         n = int(ns_t[idx].numpy())
-        feat_size = paddle.to_tensor(feature.shape[1:3], dtype='float32', place=device)
+        feat_size = paddle.to_tensor(
+            feature.shape[1:3],
+            dtype='float32',
+            place=device)
         _P = P[idx, 0:n]
-        F[idx, :, 0:n] = interp_2d(feature, _P, ori_size, feat_size, out=F[idx, :, 0:n])
-        #interp_2d(feature, _P, ori_size, feat_size, out=F[idx, :, 0:n])
-        #F[idx, :, 0:n] += interp_2d(feature, _P, ori_size, feat_size)
+        F[idx, :, 0:n] = interp_2d(
+            feature,
+            _P,
+            ori_size,
+            feat_size,
+            out=F[idx, :, 0:n])
+        # interp_2d(feature, _P, ori_size, feat_size, out=F[idx, :, 0:n])
+        # F[idx, :, 0:n] += interp_2d(feature, _P, ori_size, feat_size)
     return F
 
 
-def interp_2d(z: Tensor, P: Tensor, ori_size: Tensor, feat_size: Tensor, out=None, device=None):
+def interp_2d(
+        z: Tensor,
+        P: Tensor,
+        ori_size: Tensor,
+        feat_size: Tensor,
+        out=None,
+        device=None):
     """
     Interpolate in 2d grid space. z can be 3-dimensional where the 3rd dimension is feature vector.
     :param z: 2d/3d feature map
@@ -52,7 +73,9 @@ def interp_2d(z: Tensor, P: Tensor, ori_size: Tensor, feat_size: Tensor, out=Non
 
     step = ori_size / feat_size
     if out is None:
-        out = paddle.zeros([z.shape[0], P.shape[0]], dtype='float32').cuda(place2int(device))
+        out = paddle.zeros(
+            [z.shape[0], P.shape[0]],
+            dtype='float32').cuda(place2int(device))
     for i, p in enumerate(P):
         p = (p - step / 2) / ori_size * feat_size
         out[:, i] = bilinear_interpolate_paddle(z, p[0], p[1])
@@ -60,7 +83,12 @@ def interp_2d(z: Tensor, P: Tensor, ori_size: Tensor, feat_size: Tensor, out=Non
     return out
 
 
-def bilinear_interpolate_paddle(im: Tensor, x: Tensor, y: Tensor, out=None, device=None):
+def bilinear_interpolate_paddle(
+        im: Tensor,
+        x: Tensor,
+        y: Tensor,
+        out=None,
+        device=None):
     """
     Bi-linear interpolate 3d feature map im to 2d plane (x, y)
     :param im: 3d feature map
@@ -72,8 +100,8 @@ def bilinear_interpolate_paddle(im: Tensor, x: Tensor, y: Tensor, out=None, devi
     """
     if device is None:
         device = im.place
-    x = paddle.to_tensor(x, dtype='float32', place=device)#paddle.tensor(x, dtype=paddle.float32, device=device)
-    y = paddle.to_tensor(y, dtype='float32', place=device)#paddle.tensor(y, dtype=paddle.float32, device=device)
+    x = paddle.to_tensor(x, dtype='float32', place=device)
+    y = paddle.to_tensor(y, dtype='float32', place=device)
 
     x0 = paddle.floor(x)
     x1 = x0 + 1
@@ -85,10 +113,10 @@ def bilinear_interpolate_paddle(im: Tensor, x: Tensor, y: Tensor, out=None, devi
     y0 = paddle.clip(y0, 0, im.shape[1] - 1)
     y1 = paddle.clip(y1, 0, im.shape[1] - 1)
 
-    x0 = paddle.to_tensor(x0, dtype='int32', place=device)#paddle.tensor(x0, dtype=paddle.int32, device=device)
-    x1 = paddle.to_tensor(x1, dtype='int32', place=device)#paddle.tensor(x1, dtype=paddle.int32, device=device)
-    y0 = paddle.to_tensor(y0, dtype='int32', place=device)#paddle.tensor(y0, dtype=paddle.int32, device=device)
-    y1 = paddle.to_tensor(y1, dtype='int32', place=device)#paddle.tensor(y1, dtype=paddle.int32, device=device)
+    x0 = paddle.to_tensor(x0, dtype='int32', place=device)
+    x1 = paddle.to_tensor(x1, dtype='int32', place=device)
+    y0 = paddle.to_tensor(y0, dtype='int32', place=device)
+    y1 = paddle.to_tensor(y1, dtype='int32', place=device)
 
     Ia = im[:, y0, x0]
     Ib = im[:, y1, x0]
@@ -107,10 +135,10 @@ def bilinear_interpolate_paddle(im: Tensor, x: Tensor, y: Tensor, out=None, devi
         else:
             y1 += 1
 
-    x0 = paddle.to_tensor(x0, dtype='float32', place=device)#paddle.tensor(x0, dtype=paddle.float32, device=device)
-    x1 = paddle.to_tensor(x1, dtype='float32', place=device)#paddle.tensor(x1, dtype=paddle.float32, device=device)
-    y0 = paddle.to_tensor(y0, dtype='float32', place=device)#paddle.tensor(y0, dtype=paddle.float32, device=device)
-    y1 = paddle.to_tensor(y1, dtype='float32', place=device)#paddle.tensor(y1, dtype=paddle.float32, device=device)
+    x0 = paddle.to_tensor(x0, dtype='float32', place=device)
+    x1 = paddle.to_tensor(x1, dtype='float32', place=device)
+    y0 = paddle.to_tensor(y0, dtype='float32', place=device)
+    y1 = paddle.to_tensor(y1, dtype='float32', place=device)
 
     wa = (x1 - x) * (y1 - y)
     wb = (x1 - x) * (y - y0)

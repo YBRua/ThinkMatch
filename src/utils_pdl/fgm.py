@@ -6,7 +6,13 @@ import scipy.sparse as ssp
 import numpy as np
 
 
-def construct_m(Me: Tensor, Mp: Tensor, KG: CSRMatrix3d, KH: CSCMatrix3d, KGt: CSRMatrix3d=None, KHt: CSCMatrix3d=None):
+def construct_m(
+        Me: Tensor,
+        Mp: Tensor,
+        KG: CSRMatrix3d,
+        KH: CSCMatrix3d,
+        KGt: CSRMatrix3d = None,
+        KHt: CSCMatrix3d = None):
     """
     Construct full affinity matrix M with edge matrix Me, point matrix Mp and graph structures G1, H1, G2, H2
     :param Me: edge affinity matrix
@@ -25,17 +31,6 @@ def construct_m(Me: Tensor, Mp: Tensor, KG: CSRMatrix3d, KH: CSCMatrix3d, KGt: C
     '''
 
     M = RebuildFGM.apply(Me, Mp, KG, KH, KGt, KHt)
-
-    '''
-        K1 = kronecker_paddle(G2, G1).to(device)
-        K2 = kronecker_paddle(H2, H1).to(device)
-        Me = Me.to(device)
-        Mp = Mp.to(device)
-        M = paddle.empty(batch_num, feat_size, feat_size, dtype=paddle.float32, device=device)
-        for i in range(batch_num):
-            M[i, :, :] = paddle.mm(paddle.mm(K1[i, :, :], paddle.diag(Me[i, :, :].t().contiguous().view(-1))), K2[i, :, :].t())
-            M[i, :, :] += paddle.diag(Mp[i, :, :].t().contiguous().view(-1))
-    '''
     return M
 
 
@@ -78,7 +73,14 @@ class RebuildFGM(paddle.nn.Layer):
     Rebuild sparse affinity matrix in the formula of CVPR12's paper "Factorized Graph Matching"
     """
     @staticmethod
-    def forward(ctx, Me: Tensor, Mp: Tensor, K1: CSRMatrix3d, K2: CSCMatrix3d, K1t: CSRMatrix3d=None, K2t: CSCMatrix3d=None):
+    def forward(
+            ctx,
+            Me: Tensor,
+            Mp: Tensor,
+            K1: CSRMatrix3d,
+            K2: CSCMatrix3d,
+            K1t: CSRMatrix3d = None,
+            K2t: CSCMatrix3d = None):
         ctx.save_for_backward(Me, Mp)
         if K1t is not None and K2t is not None:
             ctx.K = K1t, K2t
@@ -86,9 +88,9 @@ class RebuildFGM(paddle.nn.Layer):
             ctx.K = K1.transpose(keep_type=True), K2.transpose(keep_type=True)
         batch_num = Me.shape[0]
 
-        #print('rebuild fgm')
-        #print('K1.shape', K1.shape)
-        #print('K2.shape', K2.shape)
+        # print('rebuild fgm')
+        # print('K1.shape', K1.shape)
+        # print('K2.shape', K2.shape)
 
         K1Me = K1.dotdiag(Me.transpose((0, 2, 1)).reshape((batch_num, -1)))
         K1MeK2 = K1Me.dot(K2, dense=True)

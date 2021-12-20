@@ -25,7 +25,7 @@ class Net(CNN):
             alpha=cfg.CIE.FEATURE_CHANNEL * 2,
             beta=0.5, k=0)
 
-        self.gnn_layer = cfg.CIE.GNN_LAYER  # numbur of GNN layers
+        self.gnn_layer = cfg.CIE.GNN_LAYER  # number of GNN layers
         for i in range(self.gnn_layer):
             if i == 0:
                 gnn_layer = Siamese_ChannelIndependentConv(
@@ -34,31 +34,34 @@ class Net(CNN):
                 gnn_layer = Siamese_ChannelIndependentConv(
                     cfg.CIE.GNN_FEAT, cfg.CIE.GNN_FEAT, cfg.CIE.GNN_FEAT)
             self.add_module(
-                'gnn_layer_{}'.format(i), gnn_layer)
+                f'gnn_layer_{i}', gnn_layer)
             self.add_module(
-                'affinity_{}'.format(i), Affinity(cfg.CIE.GNN_FEAT))
+                f'affinity_{i}', Affinity(cfg.CIE.GNN_FEAT))
             # only second last layer will have cross-graph module
             if i == self.gnn_layer - 2:
                 self.add_module(
-                    'cross_graph_{}'.format(i),
+                    f'cross_graph_{i}',
                     nn.Linear(cfg.CIE.GNN_FEAT * 2, cfg.CIE.GNN_FEAT))
                 self.add_module(
-                    'cross_graph_edge_{}'.format(i),
+                    f'cross_graph_edge_{i}',
                     nn.Linear(cfg.CIE.GNN_FEAT * 2, cfg.CIE.GNN_FEAT))
 
         self.rescale = cfg.PROBLEM.RESCALE
 
     def add_module(self, key, module):
+        """Workaround to match original torch implemenation.
+        Since paddle does not have `add_module` method.
+        """
         setattr(self, key, module)
 
     def forward(self, data_dict, **kwargs):
         if 'images' in data_dict:
             # real image data
-            src, tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['images']]
-            P_src, P_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['Ps']]
-            ns_src, ns_tgt = [paddle.to_tensor(data=_, dtype='int64') for _ in data_dict['ns']]
-            G_src, G_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['Gs']]
-            H_src, H_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['Hs']]
+            src, tgt = data_dict['images']
+            P_src, P_tgt = data_dict['Ps']
+            ns_src, ns_tgt = data_dict['ns']
+            G_src, G_tgt = data_dict['Gs']
+            H_src, H_tgt = data_dict['Hs']
             # extract feature
             src_node = self.node_layers(src)
             src_edge = self.edge_layers(src_node)
@@ -78,10 +81,10 @@ class Net(CNN):
             F_tgt = feature_align(tgt_edge, P_tgt, ns_tgt, self.rescale)
         elif 'features' in data_dict:
             # synthetic data
-            src, tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['features']]
-            ns_src, ns_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['ns']]
-            G_src, G_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['Gs']]
-            H_src, H_tgt = [paddle.to_tensor(data=_, dtype='float32') for _ in data_dict['Hs']]
+            src, tgt = data_dict['features']
+            ns_src, ns_tgt = data_dict['ns']
+            G_src, G_tgt = data_dict['Gs']
+            H_src, H_tgt = data_dict['Hs']
 
             U_src = src[:, :src.shape[1] // 2, :]
             F_src = src[:, src.shape[1] // 2:, :]
@@ -112,44 +115,21 @@ class Net(CNN):
             paddle.concat((U_tgt, F_tgt), axis=1), (0, 2, 1))
         ss = []
 
-        # emb1, emb2, emb_edge1, emb_edge2 = self.gnn_layer_0(
-        #     [A_src, emb1, emb_edge1], [A_tgt, emb2, emb_edge2])
-
-        # s = self.affinity_0(emb1, emb2)
-        # s = self.sinkhorn(s, ns_src, ns_tgt)
-        # ss.append(s)
-
-        # new_emb1 = self.cross_graph_0(
-        #     paddle.concat((emb1, paddle.bmm(s, emb2)), dim=-1))
-        # new_emb2 = self.cross_graph_0(
-        #     paddle.concat(
-        #         (emb2, paddle.bmm(s.transpose(1, 2), emb1)), dim=-1))
-
-        # emb1 = new_emb1
-        # emb2 = new_emb2
-
-        # emb1, emb2, emb_edge1, emb_edge2 = self.gnn_layer_1(
-        #     [A_src, emb1, emb_edge1], [A_tgt, emb2, emb_edge2])
-
-        # s = self.affinity_1(emb1, emb2)
-        # s = self.sinkhorn(s, ns_src, ns_tgt)
-        # ss.append(s)
-
         for i in range(self.gnn_layer):
-            gnn_layer = getattr(self, 'gnn_layer_{}'.format(i))
+            gnn_layer = getattr(self, f'gnn_layer_{i}')
 
             # during forward process, the network structure will not change
             emb1, emb2, emb_edge1, emb_edge2 = gnn_layer(
                 [A_src, emb1, emb_edge1], [A_tgt, emb2, emb_edge2])
 
-            affinity = getattr(self, 'affinity_{}'.format(i))
+            affinity = getattr(self, f'affinity_{i}')
             s = affinity(emb1, emb2)  # xAx^T
 
             s = self.sinkhorn(s, ns_src, ns_tgt)
             ss.append(s)
 
             if i == self.gnn_layer - 2:
-                cross_graph = getattr(self, 'cross_graph_{}'.format(i))
+                cross_graph = getattr(self, f'cross_graph_{i}')
                 new_emb1 = cross_graph(
                     paddle.concat(
                         (emb1, paddle.bmm(s, emb2)), axis=-1))

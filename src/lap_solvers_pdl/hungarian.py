@@ -1,4 +1,4 @@
-import time
+# import time
 import paddle
 import scipy.optimize as opt
 import numpy as np
@@ -29,19 +29,19 @@ def hungarian(s: paddle.Tensor, n1=None, n2=None):
     print( '.numpy() costs{}'.format(et - st))
     '''
 
-    st = time.time()
+    # st = time.time()
     for b in range(batch_num):
         n1b = perm_mat.shape[1] if n1 is None else n1[b]
         n2b = perm_mat.shape[2] if n2 is None else n2[b]
         row, col = opt.linear_sum_assignment(perm_mat[b, :n1b, :n2b])
         perm_mat[b] = np.zeros_like(perm_mat[b])
         perm_mat[b, row, col] = 1
-    et = time.time()
-    #print('scipy totally costs {}s'.format(et-st))
+    # et = time.time()
+    # print('scipy totally costs {}s'.format(et-st))
 
-    st = time.time()
+    # st = time.time()
     perm_mat = paddle.to_tensor(perm_mat, place=device)
-    et = time.time()
-    #print('to_tensor() costs {}s'.format(et-st))
+    # et = time.time()
+    # print('to_tensor() costs {}s'.format(et-st))
 
     return perm_mat

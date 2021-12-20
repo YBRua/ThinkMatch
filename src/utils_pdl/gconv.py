@@ -13,7 +13,7 @@ class Gconv(nn.Layer):
 
     :param in_features: the dimension of input node features
     :param out_features: the dimension of output node features
-    """
+    """  # noqa
 
     def __init__(self, in_features: int, out_features: int):
         super(Gconv, self).__init__()
@@ -30,7 +30,7 @@ class Gconv(nn.Layer):
         :param x: :math:`(b\times n\times d)` input node embedding. :math:`d`: feature dimension
         :param norm: normalize connectivity matrix or not
         :return: :math:`(b\times n\times d^\prime)` new node embedding
-        """
+        """  # noqa
         if norm is True:
             A = F.normalize(A, p=1, dim=-2)
         ax = self.a_fc(x)
@@ -50,7 +50,7 @@ class ChannelIndependentConv(nn.Layer):
     :param out_features: the dimension of output node features
     :param in_edges: the dimension of input edge features
     :param out_edges: (optional) the dimension of output edge features. It needs to be the same as ``out_features``
-    """
+    """  # noqa
 
     def __init__(self, in_features: int, out_features: int, in_edges: int, out_edges: int = None):
         super(ChannelIndependentConv, self).__init__()
@@ -64,7 +64,12 @@ class ChannelIndependentConv(nn.Layer):
         self.node_sfc = nn.Linear(in_features, out_features)
         self.edge_fc = nn.Linear(in_edges, self.out_edges)
 
-    def forward(self, A: Tensor, emb_node: Tensor, emb_edge: Tensor, mode: int = 1) -> Tuple[Tensor, Tensor]:
+    def forward(
+            self,
+            A: Tensor,
+            emb_node: Tensor,
+            emb_edge: Tensor,
+            mode: int = 1) -> Tuple[Tensor, Tensor]:
         r"""
         :param A: :math:`(b\times n\times n)` {0,1} adjacency matrix. :math:`b`: batch size, :math:`n`: number of nodes
         :param emb_node: :math:`(b\times n\times d_n)` input node embedding. :math:`d_n`: node feature dimension
@@ -72,7 +77,7 @@ class ChannelIndependentConv(nn.Layer):
         :param mode: 1 or 2, refer to the paper for details
         :return: :math:`(b\times n\times d^\prime)` new node embedding,
          :math:`(b\times n\times n\times d^\prime)` new edge embedding
-        """
+        """  # noqa
         if mode == 1:
             node_x = self.node_fc(emb_node)
             node_sx = self.node_sfc(emb_node)
@@ -81,8 +86,9 @@ class ChannelIndependentConv(nn.Layer):
             A = A.unsqueeze(-1)
             A = paddle.multiply(A.expand_as(edge_x), edge_x)
 
-            node_x = paddle.matmul(A.transpose((0, 1, 3, 2)).transpose((0, 2, 1, 3)),
-                                   node_x.unsqueeze(2).transpose((0, 1, 3, 2)).transpose((0, 2, 1, 3)))
+            node_x = paddle.matmul(
+                A.transpose((0, 1, 3, 2)).transpose((0, 2, 1, 3)),
+                node_x.unsqueeze(2).transpose((0, 1, 3, 2)).transpose((0, 2, 1, 3)))
             node_x = node_x.squeeze(-1).transpose((0, 2, 1))
             node_x = F.relu(node_x) + F.relu(node_sx)
             edge_x = F.relu(edge_x)
@@ -101,8 +107,9 @@ class ChannelIndependentConv(nn.Layer):
             A = A.unsqueeze(-1)
             A = paddle.multiply(A.expand_as(edge_x), edge_x)
 
-            node_x = paddle.matmul(A.transpose((0, 1, 3, 2)).transpose((0, 2, 1, 3)),
-                                   node_x.unsqueeze(2).transpose((0, 1, 3, 2)).transpose((0, 2, 1, 3)))
+            node_x = paddle.matmul(
+                A.transpose((0, 1, 3, 2)).transpose((0, 2, 1, 3)),
+                node_x.unsqueeze(2).transpose((0, 1, 3, 2)).transpose((0, 2, 1, 3)))
             node_x = node_x.squeeze(-1).transpose((0, 2, 1))
             node_x = F.relu(node_x) + F.relu(node_sx)
             edge_x = F.relu(edge_x)
@@ -133,7 +140,7 @@ class Siamese_Gconv(nn.Layer):
          :math:`(b\times n\times d)` input node embedding, normalize connectivity matrix or not)
         :param args: Other graphs
         :return: A list of tensors composed of new node embeddings :math:`(b\times n\times d^\prime)`
-        """
+        """  # noqa
         # embx are tensors of size (bs, N, num_features)
         emb1 = self.gconv(*g1)
         if len(args) == 0:
@@ -147,12 +154,14 @@ class Siamese_Gconv(nn.Layer):
 
 class Siamese_ChannelIndependentConv(nn.Layer):
     r"""
-    Siamese Channel Independent Conv neural network for processing arbitrary number of graphs.
+    Siamese Channel Independent Conv neural network
+    for processing arbitrary number of graphs.
 
     :param in_features: the dimension of input node features
     :param num_features: the dimension of output node features
     :param in_edges: the dimension of input edge features
-    :param out_edges: (optional) the dimension of output edge features. It needs to be the same as ``num_features``
+    :param out_edges: (optional) the dimension of output edge features.
+     It needs to be the same as ``num_features``
     """
 
     def __init__(self, in_features, num_features, in_edges, out_edges=None):
@@ -161,16 +170,22 @@ class Siamese_ChannelIndependentConv(nn.Layer):
         self.gconv = ChannelIndependentConv(
             in_features, num_features, in_edges, out_edges)
 
-    def forward(self, g1: Tuple[Tensor, Tensor, Optional[bool]], *args) -> List[Tensor]:
+    def forward(
+            self,
+            g1: Tuple[Tensor, Tensor, Optional[bool]],
+            *args) -> List[Tensor]:
         r"""
         Forward computation of Siamese Channel Independent Conv.
 
-        :param g1: The first graph, which is a tuple of (:math:`(b\times n\times n)` {0,1} adjacency matrix,
-         :math:`(b\times n\times d_n)` input node embedding, :math:`(b\times n\times n\times d_e)` input edge embedding,
+        :param g1: The first graph, which is a tuple of
+         (:math:`(b\times n\times n)` {0,1} adjacency matrix,
+         :math:`(b\times n\times d_n)` input node embedding,
+         :math:`(b\times n\times n\times d_e)` input edge embedding,
          mode (``1`` or ``2``))
         :param args: Other graphs
-        :return: A list of tensors composed of new node embeddings :math:`(b\times n\times d^\prime)`, appended with new
-         edge embeddings :math:`(b\times n\times n\times d^\prime)`
+        :return: A list of tensors
+         composed of new node embeddings :math:`(b\times n\times d^\prime)`,
+         appended with new edge embeddings :math:`(b\times n\times n\times d^\prime)`
         """
         emb1, emb_edge1 = self.gconv(*g1)
         embs = [emb1]

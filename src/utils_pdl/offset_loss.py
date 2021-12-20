@@ -33,21 +33,3 @@ class RobustLoss(nn.Layer):
         loss = paddle.sum(phi) / d1.shape[0]
 
         return loss
-
-
-if __name__ == '__main__':
-    d1 = paddle.to_tensor([[1., 2.],
-                       [2., 3.],
-                       [3., 4.]], stop_gradient=False)
-    d2 = paddle.to_tensor([[-1., -2.],
-                       [-2., -3.],
-                       [-3., -4.]], stop_gradient=False)
-    mask = paddle.to_tensor([[1., 1.],
-                         [1., 1.],
-                         [0., 0.]])
-
-    rl = RobustLoss()
-    loss = rl(d1, d2, mask)
-    loss.backward()
-    print(d1.grad)
-    print(d2.grad)

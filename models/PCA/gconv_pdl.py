@@ -1,5 +1,4 @@
 import math
-import time
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -40,7 +39,7 @@ class Gconv(nn.Layer):
         ax = self.a_fc(x)
         ux = self.u_fc(x)
         print('Twp Linear layer cost {}s'.format(time.time() - st))
-        
+
         st = time.time()
         x = paddle.bmm(A, F.relu(ax))  # has size (bs, N, num_outputs)
         print('bmm + relu cost {}s'.format(time.time() - st))

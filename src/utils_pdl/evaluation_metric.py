@@ -11,8 +11,8 @@ def pck(x, x_gt, perm_mat, dist_threshs, ns):
     :param dist_threshs: a iterable list of thresholds in pixel
     :param ns: number of exact pairs.
     :return: pck, matched num of pairs, total num of pairs
-    """
-    device = place2str(x.place )
+    """  # noqa
+    device = place2str(x.place)
     paddle.set_device(device)
 
     batch_num = x.shape[0]
@@ -23,7 +23,10 @@ def pck(x, x_gt, perm_mat, dist_threshs, ns):
     dist = paddle.zeros(batch_num, x_gt.shape[1])
     for b in range(batch_num):
         x_correspond = x[b, indices[b], :]
-        dist[b, 0:ns[b]] = paddle.norm(x_correspond - x_gt[b], p=2, axis=-1)[0:ns[b]]
+        dist[b, 0:ns[b]] = paddle.norm(
+            x_correspond - x_gt[b],
+            p=2,
+            axis=-1)[0:ns[b]]
 
     match_num = paddle.zeros(thresh_num)
     total_num = paddle.zeros(thresh_num)
@@ -43,7 +46,7 @@ def matching_accuracy(pmat_pred, pmat_gt, ns):
     :param pmat_gt: ground truth permutation matrix
     :param ns: number of exact pairs
     :return: matching accuracy, matched num of pairs, total num of pairs
-    """
+    """  # noqa
     device = pmat_pred.place
     batch_num = pmat_pred.shape[0]
 
@@ -54,15 +57,15 @@ def matching_accuracy(pmat_pred, pmat_gt, ns):
     assert paddle.all(paddle.sum(pmat_pred, axis=-1) <= 1) and paddle.all(paddle.sum(pmat_pred, axis=-2) <= 1)
     assert paddle.all(paddle.sum(pmat_gt, axis=-1) <= 1) and paddle.all(paddle.sum(pmat_gt, axis=-2) <= 1)
 
-    #indices_pred = paddle.argmax(pmat_pred, axis=-1)
-    #indices_gt = paddle.argmax(pmat_gt, axis=-1)
+    # indices_pred = paddle.argmax(pmat_pred, axis=-1)
+    # indices_gt = paddle.argmax(pmat_gt, axis=-1)
 
-    #matched = (indices_gt == indices_pred).type(pmat_pred.dtype)
+    # matched = (indices_gt == indices_pred).type(pmat_pred.dtype)
     match_num = 0
     total_num = 0
     for b in range(batch_num):
-        #match_num += paddle.sum(matched[b, :ns[b]])
-        #total_num += ns[b].item()
+        # match_num += paddle.sum(matched[b, :ns[b]])
+        # total_num += ns[b].item()
         match_num += paddle.sum(pmat_pred[b, :ns[b]] * pmat_gt[b, :ns[b]])
         total_num += paddle.sum(pmat_gt[b, :ns[b]])
 
@@ -76,11 +79,13 @@ def objective_score(pmat_pred, affmtx, ns):
     :param affmtx: affinity matrix from the problem
     :param ns: number of exact pairs
     :return: objective scores
-    """
+    """ # noqa
     batch_num = pmat_pred.shape[0]
 
     p_vec = pmat_pred.transpose(1, 2).reshape(batch_num, -1, 1)
-    obj_score = paddle.matmul(paddle.matmul(p_vec.transpose(1, 2), affmtx), p_vec).reshape(-1)
+    obj_score = paddle.matmul(
+        paddle.matmul(p_vec.transpose(1, 2), affmtx),
+        p_vec).reshape(-1)
 
     return obj_score
 
@@ -92,4 +97,4 @@ def format_metric(ms) -> str:
     :param ms: tensor containing metric
     :return: a formatted string containing mean and variance
     """
-    return '{:.4f}±{:.4f}'.format(paddle.mean(ms).item(), paddle.std(ms).item())
+    return f'{paddle.mean(ms).item():.4f}±{paddle.std(ms).item():.4f}'

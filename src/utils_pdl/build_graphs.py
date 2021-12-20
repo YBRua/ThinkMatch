@@ -7,9 +7,16 @@ import itertools
 import numpy as np
 from .pdl_device_trans import place2int
 
-def build_graphs(P_np: np.ndarray, n: int, n_pad: int=None, edge_pad: int=None, stg: str='fc', sym: bool=True):
+
+def build_graphs(
+        P_np: np.ndarray,
+        n: int,
+        n_pad: int = None,
+        edge_pad: int = None,
+        stg: str = 'fc',
+        sym: bool = True):
     """
-    Build graph matrix G,H from point set P. This function supports only cpu operations in numpy.
+    Build graph matrix G, H from point set P. This function supports only cpu operations in numpy.
     G, H is constructed from adjacency matrix A: A = G * H^T
     :param P_np: point set containing point coordinates
     :param n: number of exact points in the point set
@@ -21,9 +28,9 @@ def build_graphs(P_np: np.ndarray, n: int, n_pad: int=None, edge_pad: int=None, 
                 'fc'(default), a fully-connected graph is constructed
     :param device: device. If not specified, it will be the same as the input
     :return: G, H, edge_num
-    """
+    """  # noqa
 
-    assert stg in ('fc', 'tri', 'near'), 'No strategy named {} found.'.format(stg)
+    assert stg in ('fc', 'tri', 'near'), f'Strategy {stg} not found.'
 
     if stg == 'tri':
         A = delaunay_triangulate(P_np[0:n, :])
@@ -32,7 +39,7 @@ def build_graphs(P_np: np.ndarray, n: int, n_pad: int=None, edge_pad: int=None, 
     else:
         A = fully_connect(P_np[0:n, :])
     edge_num = int(np.sum(A, axis=(0, 1)))
-    assert n > 0 and edge_num > 0, 'Error in n = {} and edge_num = {}'.format(n, edge_num)
+    assert n > 0 and edge_num > 0, f'Error: n = {n} and edge_num = {edge_num}'
 
     if n_pad is None:
         n_pad = n
@@ -70,13 +77,14 @@ def delaunay_triangulate(P: np.ndarray):
     else:
         try:
             d = Delaunay(P)
-            #assert d.coplanar.size == 0, 'Delaunay triangulation omits points.'
             A = np.zeros((n, n))
             for simplex in d.simplices:
                 for pair in itertools.permutations(simplex, 2):
                     A[pair] = 1
         except QhullError as err:
-            print('Delaunay triangulation error detected. Return fully-connected graph.')
+            print(
+                'Error in Delaunay triangulation.',
+                'Fall back to fully-connected graph.')
             print('Traceback:')
             print(err)
             A = fully_connect(P)
@@ -109,14 +117,15 @@ def reshape_edge_feature(F: Tensor, G: Tensor, H: Tensor, device=None):
     :param H: factorized adjacancy matrix, where A = G * H^T
     :param device: device. If not specified, it will be the same as the input
     :return: X
-    """
+    """  # noqa
     if device is None:
-        device = place2int(F.place )
+        device = place2int(F.place)
 
     batch_num = F.shape[0]
     feat_dim = F.shape[1]
     point_num, edge_num = G.shape[1:3]
-    X = paddle.zeros(batch_num, 2 * feat_dim, edge_num, dtype='float32').cuda(device)
+    X = paddle.zeros(
+        batch_num, 2 * feat_dim, edge_num, dtype='float32').cuda(device)
     X[:, 0:feat_dim, :] = paddle.matmul(F, G)
     X[:, feat_dim:2*feat_dim, :] = paddle.matmul(F, H)
 

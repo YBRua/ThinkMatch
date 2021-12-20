@@ -26,6 +26,7 @@ class CrossEntropyLoss(nn.Layer):
                 pred_perm[b, :pred_ns[b], :gt_ns[b]],
                 gt_perm[b, :pred_ns[b], :gt_ns[b]],
                 reduction='sum')
-            n_sum += pred_ns[b].astype(n_sum.dtype).cuda(device_id=place2int(pred_perm.place))
+            n_sum += pred_ns[b].astype(n_sum.dtype)\
+                .cuda(device_id=place2int(pred_perm.place))
 
         return loss / n_sum
