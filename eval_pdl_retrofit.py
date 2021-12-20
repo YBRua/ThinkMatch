@@ -28,11 +28,6 @@ def eval_model(
     print('Start Evaluation.')
     start_time = time.time()
 
-    # TODO: automatic detect model device
-    device = f'gpu:{cfg.GPU}'
-    print(f'Using GPU {device}')
-    paddle.device.set_device(device)
-
     was_training = model.training
     model.eval()
 
@@ -207,7 +202,9 @@ if __name__ == '__main__':
     else:
         clss = [cls]
 
-    device = 'gpu:0'
+    device = f'gpu:{cfg.GPU}'
+    print(f'Using GPU {device}')
+    paddle.device.set_device(device)
 
     model = Net()
     # model = model.to(device)
