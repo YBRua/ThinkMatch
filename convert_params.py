@@ -62,29 +62,30 @@ def convert_params(model_th, model_pd, model_path):
                 "float32")
 
     assert len(state_dict_pd.keys()) == len(state_dict.keys())
-    try:
-        len(state_dict.keys()) + \
-            num_batches_tracked_th == len(state_dict_th.keys())
-    except Exception:
-        print(
-            "The number of num_batches_tracked is"
-            + f" {num_batches_tracked_th} in pytorch model.")
-        print("Exception: there are other layer parameter which not converted")
+    if (len(state_dict.keys()) + num_batches_tracked_th
+            != len(state_dict_th.keys())):
+        raise ValueError(
+            f'Statedict key mismatch: Paddle got {len(state_dict.keys())} keys'
+            + f' and {num_batches_tracked_th} batch-norm params.'
+            + f' But torch model has {len(state_dict_th.keys())} keys'
+        )
 
     model_pd.set_dict(state_dict)
 
     fluid.dygraph.save_dygraph(model_pd.state_dict(), model_path=model_path)
     print("model converted successfully.")
-
+    print(f'  Torch model has {len(state_dict_th.keys())} keys', end='. ')
+    print(f'Including {num_batches_tracked_th} keys not used during inference')
+    print(f'  Paddle model has {len(state_dict.keys())} keys')
 
 def vgg_convert(paddle_param_path):
     with fluid.dygraph.guard():
         model_th = models.vgg16_bn(pretrained=True)
         model_pd = vision.models.vgg16(pretrained=False, batch_norm=True)
         model_path = paddle_param_path
-        print(model_th.state_dict().keys())
+        print(model_th.state_dict().keys(), sep='\n')
         print(len(model_th.state_dict().keys()))
-        print(model_pd.state_dict().keys())
+        print(model_pd.state_dict().keys(), sep='\n')
         print(len(model_pd.state_dict().keys()))
         convert_params(model_th, model_pd, model_path)
 
@@ -127,9 +128,9 @@ def pca_convert(torch_param_path, paddle_param_path):
         load_model(model_th, torch_param_path)
         model_path = paddle_param_path
         print('Torch State Dict:', len(model_th.state_dict().keys()))
-        print(*model_th.state_dict().keys(), sep=' ')
+        print(*model_th.state_dict().keys(), sep='\n')
         print('Paddle State Dict:', len(model_pd.state_dict().keys()))
-        print(*model_pd.state_dict().keys(), sep=' ')
+        print(*model_pd.state_dict().keys(), sep='\n')
 
         convert_params(model_th, model_pd, model_path)
 
