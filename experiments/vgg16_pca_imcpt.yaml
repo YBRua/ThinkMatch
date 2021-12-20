@@ -12,10 +12,8 @@ DATALOADER_NUM: 2
 
 RANDOM_SEED: 123
 
-# available GPU ids
-GPUS:
-  - 0
-#  - 1
+# Only support inference on one GPU
+GPU: 0
 
 # Problem configuration
 PROBLEM:

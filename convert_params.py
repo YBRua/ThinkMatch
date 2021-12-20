@@ -65,9 +65,9 @@ def convert_params(model_th, model_pd, model_path):
     if (len(state_dict.keys()) + num_batches_tracked_th
             != len(state_dict_th.keys())):
         raise ValueError(
-            f'Statedict key mismatch: Paddle got {len(state_dict.keys())} keys'
+            f'Statedict key mismatch: Paddle has {len(state_dict.keys())} keys'
             + f' and {num_batches_tracked_th} batch-norm params.'
-            + f' But torch model has {len(state_dict_th.keys())} keys'
+            + f' But Torch has {len(state_dict_th.keys())} keys'
         )
 
     model_pd.set_dict(state_dict)
