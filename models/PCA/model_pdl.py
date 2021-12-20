@@ -91,7 +91,7 @@ class Net(CNN):
         else:
             raise ValueError('Unknown data type for this model.')
 
-        emb1 = paddle.concat((U_src, F_src), dim=1).transpose((0, 2, 1))
+        emb1 = paddle.concat((U_src, F_src), axis=1).transpose((0, 2, 1))
         emb2 = paddle.concat((U_tgt, F_tgt), axis=1).transpose((0, 2, 1))
         ss = []
 
@@ -111,11 +111,11 @@ class Net(CNN):
                     new_emb1 = cross_graph(
                         paddle.concat(
                             (emb1, paddle.bmm(s, emb2)),
-                            dim=-1))
+                            axis=-1))
                     new_emb2 = cross_graph(
                         paddle.concat(
                             (emb2, paddle.bmm(s.transpose((0, 2, 1)), emb1)),
-                            dim=-1))
+                            axis=-1))
                     emb1 = new_emb1
                     emb2 = new_emb2
         else:
@@ -133,11 +133,11 @@ class Net(CNN):
                 emb1 = cross_graph(
                     paddle.concat(
                         (emb1_0, paddle.bmm(s, emb2_0)),
-                        dim=-1))
+                        axis=-1))
                 emb2 = cross_graph(
                     paddle.concat(
                         (emb2_0, paddle.bmm(s.transpose((0, 2, 1)), emb1_0)),
-                        dim=-1))
+                        axis=-1))
 
                 i = self.gnn_layer - 1
                 gnn_layer = getattr(self, f'gnn_layer_{i}')
