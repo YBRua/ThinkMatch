@@ -170,8 +170,9 @@ __C.WILLOW.TRAIN_OFFSET = 0
 # name of backbone net
 __C.BACKBONE = 'VGG16_bn'
 
-# Parallel GPU indices ([0] for single GPU)
-__C.GPUS = [0]
+# Default GPU for model inference
+# For paddle we currently only support one GPU
+__C.GPU = 0
 
 # num of dataloader processes
 __C.DATALOADER_NUM = __C.BATCH_SIZE
