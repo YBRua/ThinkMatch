@@ -29,7 +29,7 @@ def eval_model(
     start_time = time.time()
 
     # TODO: automatic detect model device
-    device = f'gpu:{cfg.GPUS}'
+    device = f'gpu:{cfg.GPU}'
     paddle.set_device(device)
 
     was_training = model.training
