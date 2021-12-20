@@ -5,7 +5,7 @@ from src.lap_solvers_pdl.sinkhorn import Sinkhorn
 from src.utils_pdl.feature_align import feature_align
 from models.PCA.gconv_pdl import Siamese_Gconv
 from models.PCA.affinity_layer_pdl import Affinity
-from src.lap_solvers.hungarian import hungarian
+from src.lap_solvers_pdl.hungarian import hungarian
 
 from src.utils.config import cfg
 
