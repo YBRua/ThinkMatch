@@ -15,7 +15,7 @@ RANDOM_SEED: 123
 PRETRAINED_PATH: ./pretrained/paddle_vgg16_cie_voc.pdparams
 
 # Only support inference on one GPU
-GPU: 0
+GPU: 1
 
 # Problem configuration
 PROBLEM:
