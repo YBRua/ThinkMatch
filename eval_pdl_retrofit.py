@@ -30,7 +30,7 @@ def eval_model(
 
     # TODO: automatic detect model device
     device = f'gpu:{cfg.GPU}'
-    print(f'Using GPU {cfg.GPU}')
+    print(f'Using GPU {device}')
     paddle.device.set_device(device)
 
     was_training = model.training
