@@ -23,7 +23,7 @@ class PowerIteration(nn.Layer):
         batch_num = M.shape[0]
         mn = M.shape[1]
         if v0 is None:
-            v0 = paddle.ones(batch_num, mn, 1, dtype=M.dtype, place=M.place)
+            v0 = paddle.ones((batch_num, mn, 1), dtype=M.dtype)
 
         v = vlast = v0
         for i in range(self.max_iter):
