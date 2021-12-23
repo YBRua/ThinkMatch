@@ -99,7 +99,7 @@ def construct_aff_mat_dense(Ke: Tensor, Kp: Tensor, KroG: List[Tensor], KroH: Li
         diag_KroH)  # B, MN, MN
     for b in range(B):
         res[b] = paddle.diag(
-            Kp[b].transpose((1, 0)).reshape([-1])) + KroG_diag_KroH
-    print(res.shape)
+            Kp[b].transpose((1, 0)).reshape([-1])) + KroG_diag_KroH[b]
+    # print(res.shape)
 
     return res
