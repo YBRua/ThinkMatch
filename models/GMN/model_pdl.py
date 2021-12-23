@@ -21,7 +21,7 @@ class Net(CNN):
         self.affinity_layer = Affinity(cfg.GMN.FEATURE_CHANNEL)
         self.power_iteration = PowerIteration(max_iter=cfg.GMN.PI_ITER_NUM, stop_thresh=cfg.GMN.PI_STOP_THRESH)
         self.bi_stochastic = Sinkhorn(
-            max_iter=cfg.CIE.SK_ITER_NUM, epsilon=cfg.CIE.SK_EPSILON)
+            max_iter=cfg.GMN.BS_ITER_NUM, epsilon=cfg.GMN.BS_EPSILON)
         self.voting_layer = Voting(alpha=cfg.GMN.VOTING_ALPHA)
         self.displacement_layer = Displacement()
         self.l2norm = nn.LocalResponseNorm(cfg.GMN.FEATURE_CHANNEL * 2, alpha=cfg.GMN.FEATURE_CHANNEL * 2, beta=0.5, k=0)
