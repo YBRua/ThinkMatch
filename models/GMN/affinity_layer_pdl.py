@@ -5,7 +5,7 @@ import numpy as np
 from numpy.random import uniform
 
 
-class InnerpAffinity(nn.Module):
+class InnerpAffinity(nn.Layer):
     """ Affinity Layer to compute the affinity matrix via inner product from feature space.
     Me = X * Lambda * Y^T
     Mp = Ux * Uy^T
