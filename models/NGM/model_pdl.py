@@ -139,7 +139,9 @@ class Net(CNN):
             emb_K, emb = gnn_layer(A, emb_K, emb, ns_src, ns_tgt)
 
         v = self.classifier(emb)
-        s = v.reshape((v.shape[0], tgt_len, -1)).transpose((0, 2, 1))
+        s = v\
+            .reshape((v.shape[0], tgt_len, -1))\
+            .transpose((0, 2, 1))
 
         if self.training or cfg.NGM.GUMBEL_SK <= 0:
             ss = self.sinkhorn(s, ns_src, ns_tgt, dummy_row=True)
@@ -148,7 +150,12 @@ class Net(CNN):
             gumbel_sample_num = cfg.NGM.GUMBEL_SK
             if self.training:
                 gumbel_sample_num //= 10
-            ss_gumbel = self.gumbel_sinkhorn(s, ns_src, ns_tgt, sample_num=gumbel_sample_num, dummy_row=True)
+            ss_gumbel = self.gumbel_sinkhorn(
+                s,
+                ns_src,
+                ns_tgt,
+                sample_num=gumbel_sample_num,
+                dummy_row=True)
 
             # FIXME: workaround with np. Does NOT support backward propagation
             def repeat_(x, rep_num):

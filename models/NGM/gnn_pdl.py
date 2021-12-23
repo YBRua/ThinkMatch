@@ -78,13 +78,16 @@ class GNNLayer(nn.Layer):
             n2_rep = paddle.to_tensor(np.repeat(n2, self.sk_channel, axis=0))
             # n1_rep = torch.repeat_interleave(n1, self.sk_channel, dim=0)
             # n2_rep = torch.repeat_interleave(n2, self.sk_channel, dim=0)
-            x4 = x3.transpose((0, 2, 1)).reshape(
-                x.shape[0] * self.sk_channel, n2.max(), n1.max()).transpose((0, 2, 1))
+            x4 = x3\
+                .transpose((0, 2, 1))\
+                .reshape((x.shape[0] * self.sk_channel, n2.max(), n1.max()))\
+                .transpose((0, 2, 1))
             x5 = self.sk(x4, n1_rep, n2_rep,
                          dummy_row=True).transpose((0, 2, 1))
 
-            x6 = x5.reshape(x.shape[0], self.sk_channel,
-                            n1.max() * n2.max()).transpose((0, 2, 1))
+            x6 = x5\
+                .reshape((x.shape[0], self.sk_channel, n1.max() * n2.max()))\
+                .transpose((0, 2, 1))
             x_new = paddle.concat((x2, x6), axis=-1)
         else:
             x_new = x2
