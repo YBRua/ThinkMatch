@@ -72,7 +72,7 @@ def matching_accuracy(pmat_pred, pmat_gt, ns):
     return match_num / total_num, match_num, total_num
 
 
-def objective_score(pmat_pred, affmtx, ns):
+def objective_score(pmat_pred, affmtx):
     """
     Objective score given predicted permutation matrix and affinity matrix from the problem.
     :param pmat_pred: predicted permutation matrix
