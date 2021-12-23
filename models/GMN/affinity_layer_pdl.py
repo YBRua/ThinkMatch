@@ -35,10 +35,10 @@ class InnerpAffinity(nn.Layer):
 
         self.lambda1 = self.create_parameter(
             shape=tmp1.shape,
-            default_initializer=lambda1_attr)
+            attr=lambda1_attr)
         self.lambda2 = self.create_parameter(
             shape=tmp2.shape,
-            default_initializer=lambda2_attr)
+            attr=lambda2_attr)
         self.add_parameter('labmda1', self.lambda1)
         self.add_parameter('lambda2', self.lambda2)
 
