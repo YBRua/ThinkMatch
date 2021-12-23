@@ -28,19 +28,19 @@ class InnerpAffinity(nn.Layer):
         tmp1 += np.eye(self.d) / 2.0
         tmp2 += np.eye(self.d) / 2.0
 
-        lambda1_init = nn.initializer.Assign(
-            paddle.to_tensor(tmp1, dtype='float64'))
-        lambda2_init = nn.initializer.Assign(
-            paddle.to_tensor(tmp2, dtype='float64'))
+        lambda1_attr = paddle.ParamAttr(
+            initializer=nn.initializer.Assign(paddle.to_tensor(tmp1, dtype='float64')))
+        lambda2_attr = paddle.ParamAttr(
+            initializer=nn.initializer.Assign(paddle.to_tensor(tmp2, dtype='float64')))
 
-        lambda1 = self.create_parameter(
+        self.lambda1 = self.create_parameter(
             shape=tmp1.shape,
-            default_initializer=lambda1_init)
-        lambda2 = self.create_parameter(
+            default_initializer=lambda1_attr)
+        self.lambda2 = self.create_parameter(
             shape=tmp2.shape,
-            default_initializer=lambda2_init)
-        self.add_parameter('labmda1', lambda1)
-        self.add_parameter('lambda2', lambda2)
+            default_initializer=lambda2_attr)
+        self.add_parameter('labmda1', self.lambda1)
+        self.add_parameter('lambda2', self.lambda2)
 
         self.relu = nn.ReLU()  # problem: if weight<0, then always grad=0. So this parameter is never updated!
 
