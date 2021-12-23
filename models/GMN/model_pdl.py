@@ -28,7 +28,7 @@ class Net(CNN):
         self.rescale = cfg.PROBLEM.RESCALE
 
     def forward(self, data_dict, **kwargs):
-        if 'image' in data_dict:
+        if 'images' in data_dict:
             # real image data
             src, tgt = data_dict['images']
             P_src, P_tgt = data_dict['Ps']
@@ -55,7 +55,7 @@ class Net(CNN):
             U_tgt = feature_align(tgt_node, P_tgt, ns_tgt, self.rescale)
             F_tgt = feature_align(tgt_edge, P_tgt, ns_tgt, self.rescale)
 
-        elif 'feature' in data_dict:
+        elif 'features' in data_dict:
             # synthetic data
             src, tgt = data_dict['features']
             ns_src, ns_tgt = data_dict['ns']
@@ -68,7 +68,7 @@ class Net(CNN):
             U_tgt = tgt[:, :tgt.shape[1] // 2, :]
             F_tgt = tgt[:, tgt.shape[1] // 2:, :]
         else:
-            raise ValueError('unknown type string {}'.format(type))
+            raise ValueError('Unsupported data type for this model.')
 
         X = reshape_edge_feature(F_src, G_src, H_src)
         Y = reshape_edge_feature(F_tgt, G_tgt, H_tgt)
