@@ -159,8 +159,8 @@ def eval_model(
     if not paddle.any(paddle.isnan(objs)):
         print('Normalized Objective Score')
         for idx, (cls, cls_obj) in enumerate(zip(classes, objs)):
-            print(f'{cls} = {cls_obj:.4f}')
-        print(f'Average Objective Score = {paddle.mean(objs):.4f}')
+            print(f'{cls} = {cls_obj.item():.4f}')
+        print(f'Average Objective Score = {paddle.mean(objs).item():.4f}')
 
     print('Prediction time')
     for idx, (cls, cls_time) in enumerate(zip(classes, pred_time)):

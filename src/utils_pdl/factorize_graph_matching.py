@@ -89,13 +89,15 @@ def construct_aff_mat_dense(Ke: Tensor, Kp: Tensor, KroG: List[Tensor], KroH: Li
     # NOTE: Every single transpose here matters
     # because we should use a COLUMN VECTORIZATION here.
     res = paddle.zeros((B, M * N, M * N))
+    KroG = paddle.stack(KroG)
+    KroH = paddle.stack(KroH)
+    diag_KroH = paddle.multiply(
+        Ke.transpose((0, 2, 1)).reshape([B, -1, 1]),
+        KroH.transpose((0, 2, 1)))
+    KroG_diag_KroH = paddle.bmm(
+        KroG,
+        diag_KroH)  # B, MN, MN
     for b in range(B):
-        diag_KroH = paddle.multiply(
-            Ke[b].transpose((1, 0)).reshape([-1, 1]),
-            KroH[b].transpose((1, 0)))
-        KroG_diag_KroH = paddle.matmul(
-            KroG[b],
-            diag_KroH)  # MN, MN
         res[b] = paddle.diag(
             Kp[b].transpose((1, 0)).reshape([-1])) + KroG_diag_KroH
 
