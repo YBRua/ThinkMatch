@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from utils.sparse import sbmm
+from src.utils.sparse import sbmm
 
 
 class PowerIteration(nn.Module):

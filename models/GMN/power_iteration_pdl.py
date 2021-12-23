@@ -1,6 +1,7 @@
 import paddle
 import paddle.nn as nn
-from utils.sparse import sbmm
+# TODO: We use dense implementation now
+# from utils.sparse import sbmm
 
 
 class PowerIteration(nn.Layer):
@@ -26,10 +27,10 @@ class PowerIteration(nn.Layer):
 
         v = vlast = v0
         for i in range(self.max_iter):
-            if M.is_sparse:
-                v = sbmm(M, v)
-            else:
-                v = paddle.bmm(M, v)
+            # if M.is_sparse:
+            #     v = sbmm(M, v)
+            # else:
+            v = paddle.bmm(M, v)
             n = paddle.norm(v, p=2, dim=1)
             v = paddle.matmul(v, (1 / n).reshape([batch_num, 1, 1]))
             if paddle.norm(v - vlast) < self.stop_thresh:
