@@ -199,9 +199,12 @@ def collate_fn(data: list):
             K1H = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
 
             # , K1G.transpose(keep_type=True), K1H.transpose(keep_type=True)
-            ret['Ks'] = K1G, K1H
+            ret['KGHs'] = K1G, K1H
         except ValueError:
             pass
+
+    # NOTE: NGMv2 require ret['aff_mat'], constructed via Fi and Fj
+    #       But since NGMv2 has not yet implemented in paddle
 
     ret['batch_size'] = len(data)
     # ret['univ_size'] = paddle.to_tensor([max(*[item[b] for item in ret['univ_size']]) for b in range(ret['batch_size'])])
