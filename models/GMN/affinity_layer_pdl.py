@@ -23,13 +23,20 @@ class InnerpAffinity(nn.Layer):
         self.d = d
         # set parameters
         stdv = 1. / math.sqrt(self.d)
-        tmp1 = uniform(low=-1*stdv, high=stdv, size=(self.d,self.d))
-        tmp2 = uniform(low=-1*stdv, high=stdv, size=(self.d,self.d))
+        tmp1 = uniform(low=-1*stdv, high=stdv, size=(self.d, self.d))
+        tmp2 = uniform(low=-1*stdv, high=stdv, size=(self.d, self.d))
         tmp1 += np.eye(self.d) / 2.0
-        tmp2 += np.eye(self.d) / 2.0 
+        tmp2 += np.eye(self.d) / 2.0
 
-        self.lambda1 = paddle.ParamAttr(initializer=nn.initializer.Assign(paddle.to_tensor(tmp1, dtype='float64')))
-        self.lambda2 = paddle.ParamAttr(initializer=nn.initializer.Assign(paddle.to_tensor(tmp2, dtype='float64')))
+        lambda1_init = nn.initializer.Assign(
+            paddle.to_tensor(tmp1, dtype='float64'))
+        lambda2_init = nn.initializer.Assign(
+            paddle.to_tensor(tmp2, dtype='float64'))
+
+        self.lambda1 = self.create_parameter(
+            default_initializer=lambda1_init)
+        self.lambda2 = self.create_parameter(
+            default_initializer=lambda2_init)
         self.add_parameter('labmda1', self.lambda1)
         self.add_parameter('lambda2', self.lambda2)
 
