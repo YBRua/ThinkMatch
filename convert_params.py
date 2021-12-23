@@ -53,7 +53,13 @@ def convert_params(model_th, model_pd, model_path):
             key_th = key_pd.replace("_variance", "running_var")
 
         # if "fc" in key_th or "classifier":
-        if "fc" in key_th or "cross_graph" in key_th:  # ad-hoc fix for CIE
+        if (
+                "fc" in key_th
+                or "classifier" in key_th
+                or "cross_graph" in key_th  # ad-hoc fix for CIE
+                or "n_func" in key_th       # ad-hoc fixes for NGM
+                or "n_self_func" in key_th  # ad-hoc fixes for NGM
+            ):
             if len(state_dict_pd[key_pd].shape) < 4:
                 state_dict[key_pd] = state_dict_th[key_th].numpy().astype(
                     "float32").transpose()
