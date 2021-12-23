@@ -91,7 +91,7 @@ def eval_model(
                 pred_time_list.append(
                     paddle.full((batch_size,), timer.toc() / batch_size))
 
-            # evaluate matching acc
+            # current implementation only supports 2GM
             if cfg.PROBLEM.TYPE != '2GM':
                 raise NotImplementedError(
                     'Only 2GM problems are supported for now.')

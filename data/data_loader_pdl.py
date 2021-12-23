@@ -1,5 +1,3 @@
-# line 138 139 has sparse_tensor !! do not know whether it will be used?
-# unfixed random seed is NOT available now
 import paddle
 import paddle.nn.functional as F
 from paddle.io import Dataset, DataLoader
@@ -11,8 +9,9 @@ from data.willow_obj import WillowObject
 from src.utils_pdl.build_graphs import build_graphs
 # Now only implement PCA
 # so following files are useless, in theory
-from src.utils_pdl.fgm import kronecker_sparse
-from src.sparse_torch import CSRMatrix3d
+# ↑No, the sparse matrices will be used when computing Kronecker Product
+# from src.utils_pdl.fgm import kronecker_sparse
+# from src.sparse_torch import CSRMatrix3d
 
 from src.utils.config import cfg
 
@@ -163,9 +162,9 @@ def collate_fn(data: list):
                 ks, vs = zip(*kvs)
                 for k in ks:
                     assert k == ks[0], "Key value mismatch."
-                #if k == 'ns' : print('original ', vs)
+                # if k == 'ns' : print('original ', vs)
                 ret[k] = stack(vs)
-                #if k == 'ns' : print('After stack, ', ret[k])
+                # if k == 'ns' : print('After stack, ', ret[k])
         elif type(inp[0]) == paddle.Tensor:
             new_t = pad_tensor(inp)
             if len(new_t) == 0:
@@ -189,12 +188,15 @@ def collate_fn(data: list):
             G1_gt, G2_gt = ret['Gs']
             H1_gt, H2_gt = ret['Hs']
             sparse_dtype = np.float32
-            K1G = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
-                sparse_dtype) for x, y in zip(G2_gt, G1_gt)]  # 1 as source graph, 2 as target graph
-            K1H = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
-                sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
-            K1G = CSRMatrix3d(K1G)
-            K1H = CSRMatrix3d(K1H).transpose()
+            # K1G = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
+            #     sparse_dtype) for x, y in zip(G2_gt, G1_gt)]  # 1 as source graph, 2 as target graph
+            # K1H = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
+            #     sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
+            # K1G = CSRMatrix3d(K1G)
+            # K1H = CSRMatrix3d(K1H).transpose()
+            # use dense implementation as workaround
+            K1G = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(G2_gt, G1_gt)]
+            K1H = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
 
             # , K1G.transpose(keep_type=True), K1H.transpose(keep_type=True)
             ret['Ks'] = K1G, K1H
