@@ -11,6 +11,10 @@ from models.CIE.model import Net as TorchCIE
 from models.CIE.model_pdl import Net as PaddleCIE
 from models.IGM.model import Net as TorchIGM
 from models.IGM.model_pdl import Net as PaddleIGM
+from models.NGM.model import Net as TorchNGM
+from models.NGM.model_pdl import Net as PaddleNGM
+from models.GMN.model import Net as TorchGMN
+from models.GMN.model_pdl import Net as PaddleGMN
 from src.utils.model_sl import load_model
 
 from src.utils.config import cfg
@@ -78,6 +82,15 @@ def convert_params(model_th, model_pd, model_path):
     print(f'Including {num_batches_tracked_th} keys not used during inference')
     print(f'  Paddle model has {len(state_dict.keys())} keys')
 
+
+def convert_and_save_model(model_paddle, model_torch, save_path):
+    print('## Torch State Dict:', len(model_torch.state_dict().keys()))
+    print(*model_torch.state_dict().keys(), sep='\n')
+    print('## Paddle State Dict:', len(model_paddle.state_dict().keys()))
+    print(*model_paddle.state_dict().keys(), sep='\n')
+    convert_params(model_torch, model_paddle, save_path)
+
+
 def vgg_convert(paddle_param_path):
     with fluid.dygraph.guard():
         model_th = models.vgg16_bn(pretrained=True)
@@ -90,16 +103,32 @@ def vgg_convert(paddle_param_path):
         convert_params(model_th, model_pd, model_path)
 
 
+def ngm_convert(torch_param_path, paddle_param_path):
+    with fluid.dygraph.guard():
+        model_torch = TorchNGM()
+        model_paddle = PaddleNGM()
+        load_model(
+            model_torch,
+            torch_param_path)
+        convert_and_save_model(model_paddle, model_torch, paddle_param_path)
+
+
+def gmn_convert(torch_param_path, paddle_param_path):
+    with fluid.dygraph.guard():
+        model_torch = TorchGMN()
+        model_paddle = PaddleGMN()
+        load_model(
+            model_torch,
+            torch_param_path)
+        convert_and_save_model(model_paddle, model_torch, paddle_param_path)
+
+
 def igm_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_torch = TorchIGM()
         model_paddle = PaddleIGM()
         load_model(model_torch, torch_param_path)
-        print('## Torch State Dict:', len(model_torch.state_dict().keys()))
-        print(*model_torch.state_dict().keys(), sep='\n')
-        print('## Paddle State Dict:', len(model_paddle.state_dict().keys()))
-        print(*model_paddle.state_dict().keys(), sep='\n')
-        convert_params(model_torch, model_paddle, paddle_param_path)
+        convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
 
 def cie_convert(torch_param_path, paddle_param_path):
@@ -109,30 +138,15 @@ def cie_convert(torch_param_path, paddle_param_path):
         load_model(
             model_torch,
             torch_param_path)
-        model_path = paddle_param_path
-        print('## Torch State Dict:', len(model_torch.state_dict().keys()))
-        print(*model_torch.state_dict().keys(), sep='\n')
-        print('## Paddle State Dict:', len(model_paddle.state_dict().keys()))
-        print(*model_paddle.state_dict().keys(), sep='\n')
-        convert_params(model_torch, model_paddle, model_path)
+        convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
 
 def pca_convert(torch_param_path, paddle_param_path):
-    '''
-    If u want to convert PCA
-    please move this file to the parent dir
-    '''
     with fluid.dygraph.guard():
-        model_th = tchPCA()
-        model_pd = pdlPCA()
-        load_model(model_th, torch_param_path)
-        model_path = paddle_param_path
-        print('Torch State Dict:', len(model_th.state_dict().keys()))
-        print(*model_th.state_dict().keys(), sep='\n')
-        print('Paddle State Dict:', len(model_pd.state_dict().keys()))
-        print(*model_pd.state_dict().keys(), sep='\n')
-
-        convert_params(model_th, model_pd, model_path)
+        model_paddle = tchPCA()
+        model_torch = pdlPCA()
+        load_model(model_torch, torch_param_path)
+        convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
 
 if __name__ == '__main__':
@@ -152,12 +166,18 @@ if __name__ == '__main__':
     if ARCH is None:
         raise ValueError('Please specify model architecture by `-m`')
     elif 'CIE' in ARCH:
-        cie_convert(INPUT_PATH, OUTPUT_PATH)
+        convertor = cie_convert
     elif 'PCA' in ARCH:
-        pca_convert(INPUT_PATH, OUTPUT_PATH)
+        convertor = pca_convert
     elif 'VGG16BN' in ARCH:
-        vgg_convert(OUTPUT_PATH)
+        convertor = vgg_convert(OUTPUT_PATH)
     elif 'IGM' in ARCH:
-        igm_convert(INPUT_PATH, OUTPUT_PATH)
+        convertor = igm_convert
+    elif 'NGM' in ARCH:
+        convertor = ngm_convert
+    elif 'GMN' in ARCH:
+        convertor = gmn_convert
     else:
         raise ValueError(f'? {ARCH}')
+
+    convertor(INPUT_PATH, OUTPUT_PATH)

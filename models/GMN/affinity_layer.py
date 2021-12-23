@@ -5,7 +5,7 @@ from torch import Tensor
 import math
 
 
-class Affinity(nn.Module):
+class InnerpAffinity(nn.Module):
     """
     Affinity Layer to compute the affinity matrix via inner product from feature space.
     Me = X * Lambda * Y^T
@@ -20,7 +20,7 @@ class Affinity(nn.Module):
             where Lambda1, Lambda2 > 0
     """
     def __init__(self, d):
-        super(Affinity, self).__init__()
+        super(InnerpAffinity, self).__init__()
         self.d = d
         self.lambda1 = Parameter(Tensor(self.d, self.d))
         self.lambda2 = Parameter(Tensor(self.d, self.d))
@@ -45,3 +45,37 @@ class Affinity(nn.Module):
         Mp = torch.matmul(Ux.transpose(1, 2), Uy)
 
         return Me, Mp
+
+
+class GaussianAffinity(nn.Module):
+    """
+    Affinity Layer to compute the affinity matrix via gaussian kernel from feature space.
+    Me = exp(- L2(X, Y) / sigma)
+    Mp = Ux * Uy^T
+    Parameter: scale of weight d, gaussian kernel sigma
+    Input: edgewise (pairwise) feature X, Y
+           pointwise (unary) feature Ux, Uy
+    Output: edgewise affinity matrix Me
+            pointwise affinity matrix Mp
+    """
+
+    def __init__(self, d, sigma):
+        super(GaussianAffinity, self).__init__()
+        self.d = d
+        self.sigma = sigma
+
+    def forward(self, X, Y, Ux=None, Uy=None, ae=1., ap=1.):
+        assert X.shape[1] == Y.shape[1] == self.d
+
+        X = X.unsqueeze(-1).expand(*X.shape, Y.shape[2])
+        Y = Y.unsqueeze(-2).expand(*Y.shape[:2], X.shape[2], Y.shape[2])
+        # dist = torch.sum(torch.pow(torch.mul(X - Y, self.w.unsqueeze(0).unsqueeze(-1).unsqueeze(-1)), 2), dim=1)
+        dist = torch.sum(torch.pow(X - Y, 2), dim=1)
+        dist[torch.isnan(dist)] = float("Inf")
+        Me = torch.exp(- dist / self.sigma) * ae
+
+        if Ux is None or Uy is None:
+            return Me
+        else:
+            Mp = torch.matmul(Ux.transpose(1, 2), Uy) * ap
+            return Me, Mp

@@ -37,13 +37,3 @@ class PowerIteration(nn.Layer):
             vlast = v
 
         return v.reshape([batch_num, -1])
-
-
-if __name__ == '__main__':
-    from paddle.autograd import gradcheck
-    input = (paddle.randn(3, 40, 40, dtype=paddle.double, requires_grad=True),)
-
-    pi = PowerIteration()
-
-    test = gradcheck(pi, input, eps=1e-6, atol=1e-4)
-    print(test)

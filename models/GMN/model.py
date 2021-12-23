@@ -2,17 +2,17 @@ import torch.nn as nn
 
 from GMN.affinity_layer import Affinity
 from GMN.power_iteration import PowerIteration
-from utils.sinkhorn import Sinkhorn
-from utils.voting_layer import Voting
+from src.lap_solvers.sinkhorn_new import Sinkhorn
+from src.utils.voting_layer import Voting
 from GMN.displacement_layer import Displacement
-from utils.build_graphs import reshape_edge_feature
-from utils.feature_align import feature_align
-from utils.fgm import construct_m
+from src.utils.build_graphs import reshape_edge_feature
+from src.utils.feature_align import feature_align
+from src.utils.fgm import construct_m
 
-from utils.config import cfg
+from src.utils.config import cfg
 
-import utils.backbone
-CNN = eval('utils.backbone.{}'.format(cfg.BACKBONE))
+import src.utils.backbone
+CNN = eval(f'src.utils.backbone.{cfg.BACKBONE}')
 
 
 class Net(CNN):

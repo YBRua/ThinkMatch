@@ -1,18 +1,18 @@
 import paddle.nn as nn
 
-from GMN.affinity_layer import Affinity
-from GMN.power_iteration import PowerIteration
-from utils.sinkhorn import Sinkhorn
-from utils.voting_layer import Voting
+from GMN.affinity_layer_pdl import InnerpAffinity as Affinity
+from GMN.power_iteration_pdl import PowerIteration
+from src.lap_solvers_pdl.sinkhorn import Sinkhorn
+from src.utils_pdl.voting_layer import Voting
 from GMN.displacement_layer import Displacement
-from utils.build_graphs import reshape_edge_feature
-from utils.feature_align import feature_align
-from utils.fgm import construct_m
+from src.utils_pdl.build_graphs import reshape_edge_feature
+from src.utils_pdl.feature_align import feature_align
+from src.utils_pdl.factorize_graph_matching import construct_aff_mat_dense
 
-from utils.config import cfg
+from src.utils.config import cfg
 
-import utils.backbone
-CNN = eval('utils.backbone.{}'.format(cfg.BACKBONE))
+import src.utils_pdl.backbone
+CNN = eval(f'src.utils_pdl.backbone.{cfg.BACKBONE}')
 
 
 class Net(CNN):
@@ -58,7 +58,7 @@ class Net(CNN):
         # affinity layer
         Me, Mp = self.affinity_layer(X, Y, U_src, U_tgt)
 
-        M = construct_m(Me, Mp, K_G, K_H)
+        M = construct_aff_mat_dense(Me, Mp, K_G, K_H)
 
         v = self.power_iteration(M)
         s = v.reshape([v.shape[0], P_tgt.shape[1], -1]).transpose((0, 2, 1))

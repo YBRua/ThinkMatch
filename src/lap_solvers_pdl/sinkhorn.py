@@ -1,5 +1,7 @@
 import paddle
+import numpy as np
 import paddle.nn as nn
+from paddle import Tensor
 from src.utils_pdl.pdl_device_trans import place2str
 
 
@@ -177,3 +179,68 @@ class Sinkhorn(nn.Layer):
             s = s[:, :-dummy_shape[1]]
 
         return s
+
+
+class GumbelSinkhorn(nn.Layer):
+    """
+    Gumbel Sinkhorn Layer turns the input matrix into a bi-stochastic matrix.
+    See details in `"Mena et al. Learning Latent Permutations with Gumbel-Sinkhorn Networks. ICLR 2018"
+    <https://arxiv.org/abs/1802.08665>`_
+
+    :param max_iter: maximum iterations (default: ``10``)
+    :param tau: the hyper parameter :math:`\tau` controlling the temperature (default: ``1``)
+    :param epsilon: a small number for numerical stability (default: ``1e-4``)
+    :param batched_operation: apply batched_operation for better efficiency (but may cause issues for back-propagation,
+     default: ``False``)
+
+    .. note::
+        This module only supports log-scale Sinkhorn operation.
+    """
+    def __init__(self, max_iter=10, tau=1., epsilon=1e-4, batched_operation=False):
+        super(GumbelSinkhorn, self).__init__()
+        self.sinkhorn = Sinkhorn(max_iter, tau, epsilon, batched_operation=batched_operation)
+
+    def forward(self, s: Tensor, nrows: Tensor=None, ncols: Tensor=None,
+                sample_num=5, dummy_row=False) -> Tensor:
+        r"""
+        :param s: :math:`(b\times n_1 \times n_2)` input 3d tensor. :math:`b`: batch size
+        :param nrows: :math:`(b)` number of objects in dim1
+        :param ncols: :math:`(b)` number of objects in dim2
+        :param sample_num: number of samples
+        :param dummy_row: whether to add dummy rows (rows whose elements are all 0) to pad the matrix to square matrix.
+         default: ``False``
+        :return: :math:`(b m\times n_1 \times n_2)` the computed doubly-stochastic matrix. :math:`m`: number of samples
+         (``sample_num``)
+
+        The samples are stacked at the fist dimension of the output tensor. You may reshape the output tensor ``s`` as:
+
+        ::
+
+            s = torch.reshape(s, (-1, sample_num, s.shape[1], s.shape[2]))
+
+        .. note::
+            We support batched instances with different number of nodes, therefore ``nrows`` and ``ncols`` are
+            required to specify the exact number of objects of each dimension in the batch. If not specified, we assume
+            the batched matrices are not padded.
+
+        .. note::
+            The original Sinkhorn algorithm only works for square matrices. To handle cases where the graphs to be
+            matched have different number of nodes, it is a common practice to add dummy rows to construct a square
+            matrix. After the row and column normalizations, the padded rows are discarded.
+
+        .. note::
+            We assume row number <= column number. If not, the input matrix will be transposed.
+        """
+        def sample_gumbel(t_like, eps=1e-20):
+            """
+            randomly sample standard gumbel variables
+            """
+            u = paddle.empty_like(t_like).uniform_()
+            return -paddle.log(-paddle.log(u + eps) + eps)
+
+        s_rep = paddle.to_tensor(np.repeat(s, sample_num, axis=0))
+        s_rep = s_rep + sample_gumbel(s_rep)
+        nrows_rep = paddle.to_tensor(np.repeat(nrows, sample_num, axis=0))
+        ncols_rep = paddle.to_tensor(np.repeat(ncols, sample_num, axis=0))
+        s_rep = self.sinkhorn(s_rep, nrows_rep, ncols_rep, dummy_row)
+        return s_rep
