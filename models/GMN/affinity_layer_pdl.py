@@ -34,14 +34,15 @@ class InnerpAffinity(nn.Layer):
             paddle.to_tensor(tmp2, dtype='float64'))
 
         self.lambda1 = self.create_parameter(
+            shape=tmp1.shape,
             default_initializer=lambda1_init)
         self.lambda2 = self.create_parameter(
+            shape=tmp2.shape
             default_initializer=lambda2_init)
         self.add_parameter('labmda1', self.lambda1)
         self.add_parameter('lambda2', self.lambda2)
 
         self.relu = nn.ReLU()  # problem: if weight<0, then always grad=0. So this parameter is never updated!
-
 
     def forward(self, X, Y, Ux, Uy, w1=1, w2=1):
         assert X.shape[1] == Y.shape[1] == 2 * self.d
