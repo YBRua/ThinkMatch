@@ -40,5 +40,6 @@ def construct_aff_mat_dense(Ke: Tensor, Kp: Tensor, KroG: List[Tensor], KroH: Li
         KroG_diag = paddle.matmul(KroG[b], paddle.diag(Ke[b].reshape([-1])))  # MN, PQ
         KroG_diag_KroH = paddle.matmul(KroG_diag, KroH[b].transpose((1, 0)))  # MN, MN
         res[b] = paddle.diag(Kp[b].reshape([-1])) + KroG_diag_KroH
+    print(res)
 
     return res
