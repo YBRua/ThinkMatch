@@ -32,7 +32,7 @@ class PowerIteration(nn.Layer):
             #     v = sbmm(M, v)
             # else:
             v = paddle.bmm(M, v)
-            n = paddle.norm(v, p=2, dim=1)
+            n = paddle.norm(v, p=2, axis=1)
             v = paddle.matmul(v, (1 / n).reshape([batch_num, 1, 1]))
             if paddle.norm(v - vlast) < self.stop_thresh:
                 return v.reshape([batch_num, -1])

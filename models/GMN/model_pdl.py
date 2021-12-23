@@ -4,7 +4,7 @@ from models.GMN.affinity_layer_pdl import InnerpAffinity as Affinity
 from models.GMN.power_iteration_pdl import PowerIteration
 from src.lap_solvers_pdl.sinkhorn import Sinkhorn
 from src.utils_pdl.voting_layer import Voting
-from models.GMN.displacement_layer import Displacement
+from models.GMN.displacement_layer_pdl import Displacement
 from src.utils_pdl.build_graphs import reshape_edge_feature
 from src.utils_pdl.feature_align import feature_align
 from src.utils_pdl.factorize_graph_matching import construct_aff_mat_dense
