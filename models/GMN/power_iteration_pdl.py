@@ -27,6 +27,7 @@ class PowerIteration(nn.Layer):
 
         v = vlast = v0
         for i in range(self.max_iter):
+            # No more sparse currently
             # if M.is_sparse:
             #     v = sbmm(M, v)
             # else:
