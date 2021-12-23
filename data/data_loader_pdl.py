@@ -194,14 +194,8 @@ def collate_fn(data: list):
             # K1G = CSRMatrix3d(K1G)
             # K1H = CSRMatrix3d(K1H).transpose()
             # use dense implementation as workaround
-            print("G1_gt", G1_gt.shape)
-            print("G2_gt", G2_gt.shape)
-            print("H1_gt", H1_gt.shape)
-            print("H2_gt", H2_gt.shape)
             K1G = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(G2_gt, G1_gt)]
             K1H = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
-            print("K1G", K1G[0].shape)
-            print("K1H", K1H[0].shape)
 
             # , K1G.transpose(keep_type=True), K1H.transpose(keep_type=True)
             ret['KGHs'] = K1G, K1H
