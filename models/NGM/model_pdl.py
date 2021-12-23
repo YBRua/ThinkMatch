@@ -23,33 +23,64 @@ CNN = eval(f'src.utils_pdl.backbone.{cfg.BACKBONE}')
 class Net(CNN):
     def __init__(self):
         super(Net, self).__init__()
+
         if cfg.NGM.EDGE_FEATURE == 'cat':
             self.affinity_layer = InnerpAffinity(cfg.NGM.FEATURE_CHANNEL)
         elif cfg.NGM.EDGE_FEATURE == 'geo':
             self.affinity_layer = GaussianAffinity(1, cfg.NGM.GAUSSIAN_SIGMA)
         else:
-            raise ValueError('Unknown edge feature type {}'.format(cfg.NGM.EDGE_FEATURE))
+            raise ValueError(
+                f'Unknown edge feature type {cfg.NGM.EDGE_FEATURE}')
+
         self.tau = cfg.NGM.SK_TAU
         self.rescale = cfg.PROBLEM.RESCALE
-        self.sinkhorn = Sinkhorn(max_iter=cfg.NGM.SK_ITER_NUM, tau=self.tau, epsilon=cfg.NGM.SK_EPSILON)
-        self.gumbel_sinkhorn = GumbelSinkhorn(max_iter=cfg.NGM.SK_ITER_NUM, tau=self.tau * 10, epsilon=cfg.NGM.SK_EPSILON, batched_operation=True)
-        self.l2norm = nn.LocalResponseNorm(cfg.NGM.FEATURE_CHANNEL * 2, alpha=cfg.NGM.FEATURE_CHANNEL * 2, beta=0.5, k=0)
+
+        self.sinkhorn = Sinkhorn(
+            max_iter=cfg.NGM.SK_ITER_NUM,
+            tau=self.tau,
+            epsilon=cfg.NGM.SK_EPSILON)
+        self.gumbel_sinkhorn = GumbelSinkhorn(
+            max_iter=cfg.NGM.SK_ITER_NUM,
+            tau=self.tau * 10,
+            epsilon=cfg.NGM.SK_EPSILON,)
+        # batched_operation=True)
+        # TODO: Paddle impl currently does not support batched_operation
+        self.l2norm = nn.LocalResponseNorm(
+            cfg.NGM.FEATURE_CHANNEL * 2,
+            alpha=cfg.NGM.FEATURE_CHANNEL * 2,
+            beta=0.5,
+            k=0)
 
         self.gnn_layer = cfg.NGM.GNN_LAYER
         for i in range(self.gnn_layer):
             tau = cfg.NGM.SK_TAU
             if i == 0:
-                gnn_layer = GNNLayer(1, 1, cfg.NGM.GNN_FEAT[i] + (1 if cfg.NGM.SK_EMB else 0), cfg.NGM.GNN_FEAT[i],
-                                     sk_channel=cfg.NGM.SK_EMB, sk_tau=tau, edge_emb=cfg.NGM.EDGE_EMB)
+                gnn_layer = GNNLayer(
+                    1,
+                    1,
+                    cfg.NGM.GNN_FEAT[i] + (1 if cfg.NGM.SK_EMB else 0),
+                    cfg.NGM.GNN_FEAT[i],
+                    sk_channel=cfg.NGM.SK_EMB,
+                    sk_tau=tau,
+                    edge_emb=cfg.NGM.EDGE_EMB)
             else:
-                gnn_layer = GNNLayer(cfg.NGM.GNN_FEAT[i - 1] + (1 if cfg.NGM.SK_EMB else 0), cfg.NGM.GNN_FEAT[i - 1],
-                                     cfg.NGM.GNN_FEAT[i] + (1 if cfg.NGM.SK_EMB else 0), cfg.NGM.GNN_FEAT[i],
-                                     sk_channel=cfg.NGM.SK_EMB, sk_tau=tau, edge_emb=cfg.NGM.EDGE_EMB)
+                gnn_layer = GNNLayer(
+                    cfg.NGM.GNN_FEAT[i - 1] + (1 if cfg.NGM.SK_EMB else 0),
+                    cfg.NGM.GNN_FEAT[i - 1],
+                    cfg.NGM.GNN_FEAT[i] + (1 if cfg.NGM.SK_EMB else 0),
+                    cfg.NGM.GNN_FEAT[i],
+                    sk_channel=cfg.NGM.SK_EMB,
+                    sk_tau=tau,
+                    edge_emb=cfg.NGM.EDGE_EMB)
             self.add_module('gnn_layer_{}'.format(i), gnn_layer)
 
         self.classifier = nn.Linear(cfg.NGM.GNN_FEAT[-1] + (1 if cfg.NGM.SK_EMB else 0), 1)
 
     def add_module(self, key, value):
+        """Workaround for paddle.
+        The behaviour of this function is the same as
+        `torch.nn.Module.add_module()`
+        """
         setattr(self, key, value)
 
     def forward(self, data_dict, **kwargs):
@@ -80,6 +111,7 @@ class Net(CNN):
             F_src = feature_align(src_edge, P_src, ns_src, self.rescale)
             U_tgt = feature_align(tgt_node, P_tgt, ns_tgt, self.rescale)
             F_tgt = feature_align(tgt_edge, P_tgt, ns_tgt, self.rescale)
+
         elif 'features' in data_dict:
             # synthetic data
             src, tgt = data_dict['features']
@@ -93,14 +125,17 @@ class Net(CNN):
             F_src = src[:, src.shape[1] // 2:, :]
             U_tgt = tgt[:, :tgt.shape[1] // 2, :]
             F_tgt = tgt[:, tgt.shape[1] // 2:, :]
+
         elif 'aff_mat' in data_dict:
             K = data_dict['aff_mat']
             ns_src, ns_tgt = data_dict['ns']
+
         else:
             raise ValueError('Unknown data type for this model.')
 
         if 'images' in data_dict or 'features' in data_dict:
             tgt_len = P_tgt.shape[1]
+
             if cfg.NGM.EDGE_FEATURE == 'cat':
                 X = reshape_edge_feature(F_src, G_src, H_src)
                 Y = reshape_edge_feature(F_tgt, G_tgt, H_tgt)
@@ -108,7 +143,8 @@ class Net(CNN):
                 X = geo_edge_feature(P_src, G_src, H_src)[:, :1, :]
                 Y = geo_edge_feature(P_tgt, G_tgt, H_tgt)[:, :1, :]
             else:
-                raise ValueError('Unknown edge feature type {}'.format(cfg.NGM.EDGE_FEATURE))
+                raise ValueError(
+                    f'Unknown edge feature type {cfg.NGM.EDGE_FEATURE}')
 
             # affinity layer
             Ke, Kp = self.affinity_layer(X, Y, U_src, U_tgt)

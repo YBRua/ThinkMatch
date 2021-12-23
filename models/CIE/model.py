@@ -17,9 +17,14 @@ class Net(CNN):
     def __init__(self):
         super(Net, self).__init__()
         self.sinkhorn = Sinkhorn(
-            max_iter=cfg.CIE.SK_ITER_NUM, epsilon=cfg.CIE.SK_EPSILON, tau=cfg.CIE.SK_TAU)
+            max_iter=cfg.CIE.SK_ITER_NUM,
+            epsilon=cfg.CIE.SK_EPSILON,
+            tau=cfg.CIE.SK_TAU)
         self.l2norm = nn.LocalResponseNorm(
-            cfg.CIE.FEATURE_CHANNEL * 2, alpha=cfg.CIE.FEATURE_CHANNEL * 2, beta=0.5, k=0)
+            cfg.CIE.FEATURE_CHANNEL * 2,
+            alpha=cfg.CIE.FEATURE_CHANNEL * 2,
+            beta=0.5,
+            k=0)
         self.gnn_layer = cfg.CIE.GNN_LAYER  # numbur of GNN layers
         for i in range(self.gnn_layer):
             if i == 0:
