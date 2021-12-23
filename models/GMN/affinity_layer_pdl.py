@@ -34,12 +34,12 @@ class InnerpAffinity(nn.Layer):
             initializer=nn.initializer.Assign(paddle.to_tensor(tmp2, dtype='float64')))
 
         self.lambda1 = self.create_parameter(
-            shape=tmp1.shape,
+            [self.d, self.d],
             attr=lambda1_attr)
         self.lambda2 = self.create_parameter(
-            shape=tmp2.shape,
+            [self.d, self.d],
             attr=lambda2_attr)
-        self.add_parameter('labmda1', self.lambda1)
+        self.add_parameter('lambda1', self.lambda1)
         self.add_parameter('lambda2', self.lambda2)
 
         self.relu = nn.ReLU()  # problem: if weight<0, then always grad=0. So this parameter is never updated!

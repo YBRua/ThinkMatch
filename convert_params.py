@@ -1,5 +1,4 @@
 # Tribute to https://github.com/wuyang556/paddlevision
-from tqdm import tqdm
 from collections import OrderedDict
 import paddle.fluid as fluid
 from torchvision import models
@@ -36,7 +35,7 @@ def convert_params(model_th, model_pd, model_path):
         if "num_batches_tracked" in key_th:
             num_batches_tracked_th += 1
 
-    for key_pd in tqdm(state_dict_pd.keys()):
+    for key_pd in state_dict_pd.keys():
         if key_pd in state_dict_th.keys():
             key_th = key_pd
         # Following tailor to our Graph Match work
@@ -143,8 +142,8 @@ def cie_convert(torch_param_path, paddle_param_path):
 
 def pca_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
-        model_paddle = tchPCA()
-        model_torch = pdlPCA()
+        model_torch = tchPCA()
+        model_paddle = pdlPCA()
         load_model(model_torch, torch_param_path)
         convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
