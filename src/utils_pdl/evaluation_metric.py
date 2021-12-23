@@ -82,10 +82,10 @@ def objective_score(pmat_pred, affmtx):
     """ # noqa
     batch_num = pmat_pred.shape[0]
 
-    p_vec = pmat_pred.transpose(1, 2).reshape(batch_num, -1, 1)
+    p_vec = pmat_pred.transpose((0, 2, 1)).reshape((batch_num, -1, 1))
     obj_score = paddle.matmul(
-        paddle.matmul(p_vec.transpose(1, 2), affmtx),
-        p_vec).reshape(-1)
+        paddle.matmul(p_vec.transpose((0, 2, 1)), affmtx),
+        p_vec).reshape([-1])
 
     return obj_score
 
