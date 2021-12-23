@@ -9,7 +9,8 @@ from data.willow_obj import WillowObject
 from src.utils_pdl.build_graphs import build_graphs
 # Now only implement PCA
 # so following files are useless, in theory
-# ↑No, the sparse matrices will be used when computing Kronecker Product
+# NOTE: The sparse matrices will be used when computing Kronecker Product
+# but we currently uses dense implementations as workaround
 # from src.utils_pdl.fgm import kronecker_sparse
 # from src.sparse_torch import CSRMatrix3d
 
@@ -162,9 +163,7 @@ def collate_fn(data: list):
                 ks, vs = zip(*kvs)
                 for k in ks:
                     assert k == ks[0], "Key value mismatch."
-                # if k == 'ns' : print('original ', vs)
                 ret[k] = stack(vs)
-                # if k == 'ns' : print('After stack, ', ret[k])
         elif type(inp[0]) == paddle.Tensor:
             new_t = pad_tensor(inp)
             if len(new_t) == 0:
@@ -195,19 +194,20 @@ def collate_fn(data: list):
             # K1G = CSRMatrix3d(K1G)
             # K1H = CSRMatrix3d(K1H).transpose()
             # use dense implementation as workaround
+            print("G2_gt", G2_gt.shape)
             K1G = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(G2_gt, G1_gt)]
             K1H = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
 
             # , K1G.transpose(keep_type=True), K1H.transpose(keep_type=True)
             ret['KGHs'] = K1G, K1H
         except ValueError:
+            print('BUGBUGBUGBUG')
             pass
 
     # NOTE: NGMv2 require ret['aff_mat'], constructed via Fi and Fj
     #       But since NGMv2 has not yet implemented in paddle
 
     ret['batch_size'] = len(data)
-    # ret['univ_size'] = paddle.to_tensor([max(*[item[b] for item in ret['univ_size']]) for b in range(ret['batch_size'])])
 
     for v in ret.values():
         if type(v) is list:

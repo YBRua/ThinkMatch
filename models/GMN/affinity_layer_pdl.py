@@ -50,9 +50,9 @@ class InnerpAffinity(nn.Layer):
         lambda2 = self.relu(self.lambda2 + self.lambda2.transpose((1,0))) * w2
         weight = paddle.concat((paddle.concat((lambda1, lambda2)),
                             paddle.concat((lambda2, lambda1))), 1)
-        Me = paddle.matmul(X.transpose((0,2,1)), weight)
+        Me = paddle.matmul(X.transpose((0, 2, 1)), weight)
         Me = paddle.matmul(Me, Y)
-        Mp = paddle.matmul(Ux.transpose((0,2,1)), Uy)
+        Mp = paddle.matmul(Ux.transpose((0, 2, 1)), Uy)
 
         return Me, Mp
 

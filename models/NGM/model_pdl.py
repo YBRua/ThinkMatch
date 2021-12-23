@@ -14,9 +14,6 @@ from src.lap_solvers_pdl.hungarian import hungarian
 import math
 from src.utils_pdl.gpu_memory import gpu_free_memory
 
-#from torch_geometric.data import Data, Batch
-#from torch_geometric.utils import dense_to_sparse, to_dense_batch
-
 from src.utils.config import cfg
 
 import src.utils_pdl.backbone
