@@ -35,12 +35,14 @@ def construct_aff_mat_dense(Ke: Tensor, Kp: Tensor, KroG: List[Tensor], KroH: Li
     """
     B, P, Q = Ke.shape
     _, N, M = Kp.shape
+    print("Ke", Ke.shape)
+    print("Kp", Kp.shape)
     res = paddle.zeros((B, M * N, M * N))
     for b in range(B):
         KroG_diag = paddle.matmul(KroG[b], paddle.diag(Ke[b].reshape([-1])))  # MN, PQ
-        # print("KroG_diag", KroG_diag.shape)
         KroG_diag_KroH = paddle.matmul(KroG_diag, KroH[b].transpose((1, 0)))  # MN, MN
-        # print("KroG-diag-KroH", KroG_diag_KroH.shape)
         res[b] = paddle.diag(Kp[b].reshape([-1])) + KroG_diag_KroH
+    print("KroG_diag", KroG_diag.shape)
+    print("KroG-diag-KroH", KroG_diag_KroH.shape)
 
     return res
