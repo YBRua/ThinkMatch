@@ -125,7 +125,7 @@ def reshape_edge_feature(F: Tensor, G: Tensor, H: Tensor, device=None):
     feat_dim = F.shape[1]
     point_num, edge_num = G.shape[1:3]
     X = paddle.zeros(
-        batch_num, 2 * feat_dim, edge_num, dtype='float32').cuda(device)
+        (batch_num, 2 * feat_dim, edge_num), dtype='float32').cuda(device)
     X[:, 0:feat_dim, :] = paddle.matmul(F, G)
     X[:, feat_dim:2*feat_dim, :] = paddle.matmul(F, H)
 
