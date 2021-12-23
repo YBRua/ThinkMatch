@@ -198,7 +198,7 @@ class GumbelSinkhorn(nn.Layer):
     """
     def __init__(self, max_iter=10, tau=1., epsilon=1e-4, batched_operation=False):
         super(GumbelSinkhorn, self).__init__()
-        self.sinkhorn = Sinkhorn(max_iter, tau, epsilon, batched_operation=batched_operation)
+        self.sinkhorn = Sinkhorn(max_iter, tau, epsilon)
 
     def forward(self, s: Tensor, nrows: Tensor=None, ncols: Tensor=None,
                 sample_num=5, dummy_row=False) -> Tensor:
