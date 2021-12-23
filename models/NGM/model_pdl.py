@@ -118,7 +118,7 @@ class Net(CNN):
 
             K = construct_aff_mat_dense(Ke, paddle.zeros_like(Kp), K_G, K_H)
 
-            A = (K > 0).to(K.dtype)
+            A = (K > 0)
 
             if cfg.NGM.FIRST_ORDER:
                 emb = Kp.transpose((0, 2, 1)).reshape((Kp.shape[0], -1, 1))
@@ -128,7 +128,7 @@ class Net(CNN):
             tgt_len = int(math.sqrt(K.shape[2]))
             dmax = (paddle.max(paddle.sum(K, axis=2, keepdim=True), axis=1, keepdim=True) + 1e-5)
             K = K / dmax * 1000
-            A = (K > 0).to(K.dtype)
+            A = paddle.cast(K > 0, K.dtype)
             emb = paddle.ones((K.shape[0], K.shape[1], 1))
 
         emb_K = K.unsqueeze(-1)
