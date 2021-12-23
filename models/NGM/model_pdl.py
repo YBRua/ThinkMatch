@@ -118,7 +118,7 @@ class Net(CNN):
 
             K = construct_aff_mat_dense(Ke, paddle.zeros_like(Kp), K_G, K_H)
 
-            A = (K > 0)
+            A = paddle.cast(K > 0, K.dtype)
 
             if cfg.NGM.FIRST_ORDER:
                 emb = Kp.transpose((0, 2, 1)).reshape((Kp.shape[0], -1, 1))
