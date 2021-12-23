@@ -3,6 +3,7 @@ import paddle.nn as nn
 from models.GMN.affinity_layer_pdl import InnerpAffinity as Affinity
 from models.GMN.power_iteration_pdl import PowerIteration
 from src.lap_solvers_pdl.sinkhorn import Sinkhorn
+from src.lap_solvers_pdl.hungarian import hungarian
 from src.utils_pdl.voting_layer import Voting
 from models.GMN.displacement_layer_pdl import Displacement
 from src.utils_pdl.build_graphs import reshape_edge_feature
@@ -85,4 +86,10 @@ class Net(CNN):
         s = self.bi_stochastic(s, ns_src, ns_tgt)
 
         d, _ = self.displacement_layer(s, P_src, P_tgt)
-        return s, d
+
+        data_dict.update({
+            'ds_mat': s,
+            'perm_mat': hungarian(s, ns_src, ns_tgt),
+            'aff_mat': M
+        })
+        return data_dict
