@@ -1,12 +1,9 @@
 import paddle
 from typing import List
 from paddle import Tensor
-from paddle.autograd import PyLayer
-from src.utils.sparse import bilinear_diag_torch
-import numpy as np
 
 
-def construct_aff_mat_dense_slower(Ke: Tensor, Kp: Tensor, KroG: List[Tensor], KroH: List[Tensor]) -> Tensor:
+def construct_aff_mat_dense_larger(Ke: Tensor, Kp: Tensor, KroG: List[Tensor], KroH: List[Tensor]) -> Tensor:
     """Construct the complete affinity matrix with
     edge-wise affinity matrix Ke, node-wise matrix Kp
     and Kronecker products KroG, KroH.
@@ -34,7 +31,10 @@ def construct_aff_mat_dense_slower(Ke: Tensor, Kp: Tensor, KroG: List[Tensor], K
     NOTE: This implementation is a workaround for the original
     CSR/CSC sparse implementation with GPU support in the torch version.
     Since Paddle currently does not have adequate support for C++ extensions
-    It is dense and devecotrized, and can thus its performance is suboptimal.
+    It is dense and devecotrized, and thus it eats up a lot of Memory
+
+    NOTE: A vectorized version has been updated.
+    It is suggested that one should use the newer version.
     """
     B, P, Q = Ke.shape
     _, N, M = Kp.shape
@@ -82,7 +82,8 @@ def construct_aff_mat_dense(Ke: Tensor, Kp: Tensor, KroG: List[Tensor], KroH: Li
     NOTE: This implementation is a workaround for the original
     CSR/CSC sparse implementation with GPU support in the torch version.
     Since Paddle currently does not have adequate support for C++ extensions
-    It is dense and devecotrized, and can thus its performance is suboptimal.
+    It is still dense but with some vectorized optimization,
+    so it occupies much less GPU memory
     """
     B, P, Q = Ke.shape
     _, N, M = Kp.shape
