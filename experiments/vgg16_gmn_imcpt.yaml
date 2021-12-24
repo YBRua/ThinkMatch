@@ -3,7 +3,7 @@ DATASET_NAME: imcpt
 
 DATASET_FULL_NAME: IMC_PT_SparseGM
 
-MODULE: models.GMN.model
+MODULE: models.GMN.model_mdl
 
 BACKBONE: VGG16_bn
 

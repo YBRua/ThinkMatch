@@ -3,7 +3,7 @@ DATASET_NAME: willow
 
 DATASET_FULL_NAME: WillowObject
 
-MODULE: models.NGM.model
+MODULE: models.NGM.model_mdl
 
 BACKBONE: VGG16_bn
 
