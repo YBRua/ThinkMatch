@@ -5,21 +5,26 @@ import paddle.nn as nn
 
 
 class PowerIteration(nn.Layer):
-    """
-    Power Iteration layer to compute the leading eigenvector of input matrix. The idea is from Spectral Graph Matching.
-    For every iteration,
-        v_k+1 = M * v_k / ||M * v_k||_2
-    Parameter: maximum iteration max_iter
-    Input: input matrix M
-           (optional) initialization vector v0. If not specified, v0 will be initialized with all 1.
-    Output: computed eigenvector v
-    """
     def __init__(self, max_iter=50, stop_thresh=2e-7):
         super(PowerIteration, self).__init__()
         self.max_iter = max_iter
         self.stop_thresh = stop_thresh
 
     def forward(self, M, v0=None):
+        """Power iteration layer.
+        Computes the leading eigenvector of input matrix by Power Iteration.
+
+        `v_{k+1} = M * v_{k} / ||M * v_{k}||_2`
+
+        Args:
+            `M` (Tensor): Input tensor
+            `v0` (Tensor, optional): Initial eigenvector.
+                If is None, it will be initialized with `ones`.
+                Default: None.
+
+        Returns:
+            `v`: Leading eigenvector
+        """
         batch_num = M.shape[0]
         mn = M.shape[1]
         if v0 is None:

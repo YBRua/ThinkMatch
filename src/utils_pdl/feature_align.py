@@ -9,14 +9,18 @@ def feature_align(
         ns_t: Tensor,
         ori_size: tuple,
         device=None):
-    """
-    Perform feature align from the raw feature map.
-    :param raw_feature: raw feature map
-    :param P: point set containing point coordinates
-    :param ns_t: number of exact points in the point set
-    :param ori_size: size of the original image
-    :param device: device. If not specified, it will be the same as the input
-    :return: F
+    """Perform feature align from the raw feature map.
+
+    Args:
+        `raw_feature` (Tensor): raw feature map
+        `P` (Tensor): point set containing point coordinates
+        `ns_t` (Tensor): number of exact points in the point set
+        `ori_size` (tuple): size of the original image
+        `device` (optional): device. If not specified, it will be the same as the input.
+            Default: None.
+
+    Returns:
+        `F`
     """
     if device is None:
         device = raw_feature.place

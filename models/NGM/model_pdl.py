@@ -12,7 +12,6 @@ from models.GMN.affinity_layer_pdl import InnerpAffinity, GaussianAffinity
 from src.utils_pdl.evaluation_metric import objective_score
 from src.lap_solvers_pdl.hungarian import hungarian
 import math
-from src.utils_pdl.gpu_memory import gpu_free_memory
 
 from src.utils.config import cfg
 

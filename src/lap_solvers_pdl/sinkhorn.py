@@ -14,6 +14,22 @@ class Sinkhorn(nn.Layer):
     Output: bi-stochastic matrix s
     """
     def __init__(self, max_iter=10, epsilon=1e-4, tau=0.05, log_forward=True):
+        """BiStochastic Layer
+        Converts the input matrix into a bi-stochastic matrix
+        by performing iterative row and column normalization.
+
+        Args:
+            `max_iter` (int, optional): Maximum number of iterations.
+                Default: 10.
+            `epsilon` (float, optional): For numerical stability.
+                Default: 1e-4.
+            `tau` (float, optional): Default: 0.05.
+            `log_forward` (bool, optional): Log-scale for numerical stability.
+                Default: True.
+
+        NOTE: It is suggested that one should always use `log_forward`
+        for better numerical stability. Non-log forward pass is deprecated.
+        """
         super(Sinkhorn, self).__init__()
         self.max_iter = max_iter
         self.epsilon = epsilon
@@ -25,6 +41,15 @@ class Sinkhorn(nn.Layer):
                 + ' since logrithm is more stable')
 
     def forward(self, *input, **kwinput):
+        """Forward pass for the Sinkhorn algorithm.
+        Converts input matrix into doubly-stochastic matrix.
+
+        Input:
+            `s`: Input matrix.
+
+        Returns:
+            `S`: Doubly-stochastic matrix from input `s`
+        """
         if self.log_forward:
             return self.forward_log(*input, **kwinput)
         else:

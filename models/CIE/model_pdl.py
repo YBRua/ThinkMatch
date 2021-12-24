@@ -20,6 +20,7 @@ class Net(CNN):
             max_iter=cfg.CIE.SK_ITER_NUM,
             epsilon=cfg.CIE.SK_EPSILON,
             tau=cfg.CIE.SK_TAU)
+
         self.l2norm = nn.LocalResponseNorm(
             cfg.CIE.FEATURE_CHANNEL * 2,
             alpha=cfg.CIE.FEATURE_CHANNEL * 2,
@@ -29,14 +30,19 @@ class Net(CNN):
         for i in range(self.gnn_layer):
             if i == 0:
                 gnn_layer = Siamese_ChannelIndependentConv(
-                    cfg.CIE.FEATURE_CHANNEL * 2, cfg.CIE.GNN_FEAT, 1)
+                    cfg.CIE.FEATURE_CHANNEL * 2,
+                    cfg.CIE.GNN_FEAT,
+                    1)
             else:
                 gnn_layer = Siamese_ChannelIndependentConv(
-                    cfg.CIE.GNN_FEAT, cfg.CIE.GNN_FEAT, cfg.CIE.GNN_FEAT)
+                    cfg.CIE.GNN_FEAT,
+                    cfg.CIE.GNN_FEAT,
+                    cfg.CIE.GNN_FEAT)
             self.add_module(
                 f'gnn_layer_{i}', gnn_layer)
             self.add_module(
                 f'affinity_{i}', Affinity(cfg.CIE.GNN_FEAT))
+
             # only second last layer will have cross-graph module
             if i == self.gnn_layer - 2:
                 self.add_module(
@@ -132,7 +138,8 @@ class Net(CNN):
                 cross_graph = getattr(self, f'cross_graph_{i}')
                 new_emb1 = cross_graph(
                     paddle.concat(
-                        (emb1, paddle.bmm(s, emb2)), axis=-1))
+                        (emb1, paddle.bmm(s, emb2)),
+                        axis=-1))
                 new_emb2 = cross_graph(
                     paddle.concat(
                         (emb2, paddle.bmm(s.transpose((0, 2, 1)), emb1)),

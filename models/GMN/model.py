@@ -3,7 +3,7 @@ import torch.nn as nn
 from models.GMN.affinity_layer import InnerpAffinity as Affinity
 from models.GMN.power_iteration import PowerIteration
 from src.lap_solvers.sinkhorn_new import Sinkhorn
-from src.utils.voting_layer import Voting
+from models.GMN.voting_layer import Voting
 from models.GMN.displacement_layer import Displacement
 from src.utils.build_graphs import reshape_edge_feature
 from src.utils.feature_align import feature_align

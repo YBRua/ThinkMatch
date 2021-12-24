@@ -1,16 +1,14 @@
-import paddle
-import paddle.nn.functional as F
-from paddle.io import Dataset, DataLoader
-from paddle.vision import transforms
-import numpy as np
 import random
+import paddle
+import numpy as np
+import paddle.nn.functional as F
+from paddle.vision import transforms
 from data.pascal_voc import PascalVOC
 from data.willow_obj import WillowObject
+from paddle.io import Dataset, DataLoader
 from src.utils_pdl.build_graphs import build_graphs
-# Now only implement PCA
-# so following files are useless, in theory
 # NOTE: The sparse matrices will be used when computing Kronecker Product
-# but we currently uses dense implementations as workaround
+#       currently we use a dense implementation as a workaround
 # from src.utils_pdl.fgm import kronecker_sparse
 # from src.sparse_torch import CSRMatrix3d
 
@@ -112,10 +110,13 @@ class GMDataset(Dataset):
 
 
 def collate_fn(data: list):
-    """
-    Create mini-batch data for training.
-    :param data: data dict
-    :return: mini-batch
+    """Create mini-batch data for training.
+
+    Args:
+        `data` (list): data dict
+
+    Retruns:
+        mini-batched data for training
     """
     def pad_tensor(inp):
         assert type(inp[0]) == paddle.Tensor
@@ -193,7 +194,7 @@ def collate_fn(data: list):
             #     sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
             # K1G = CSRMatrix3d(K1G)
             # K1H = CSRMatrix3d(K1H).transpose()
-            # use dense implementation as workaround
+            # NOTE: use dense implementation as workaround
             K1G = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(G2_gt, G1_gt)]
             K1H = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
 
@@ -217,16 +218,13 @@ def collate_fn(data: list):
 
 
 def worker_init_fix(worker_id):
-    """
-    Init dataloader workers with fixed seed.
-    """
+    """Init dataloader workers with fixed seed."""
     random.seed(cfg.RANDOM_SEED + worker_id)
     np.random.seed(cfg.RANDOM_SEED + worker_id)
 
 
 def worker_init_rand(worker_id):
-    """
-    Init dataloader workers with torch.initial_seed().
+    """Init dataloader workers with torch.initial_seed().
     torch.initial_seed() returns different seeds when called from different dataloader threads.
     """
     random.seed(paddle.initial_seed())
@@ -236,6 +234,9 @@ def worker_init_rand(worker_id):
 def get_dataloader(dataset, fix_seed=True, shuffle=False) -> DataLoader:
     fix_seed = True  # "Paddle version now do NOT support unfixed seed"
     return paddle.io.DataLoader(
-        dataset, batch_size=cfg.BATCH_SIZE, shuffle=shuffle, num_workers=cfg.DATALOADER_NUM, collate_fn=collate_fn,
-        worker_init_fn=worker_init_fix if fix_seed else worker_init_rand
-    )
+        dataset,
+        batch_size=cfg.BATCH_SIZE,
+        shuffle=shuffle,
+        num_workers=cfg.DATALOADER_NUM,
+        collate_fn=collate_fn,
+        worker_init_fn=worker_init_fix if fix_seed else worker_init_rand)

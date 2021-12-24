@@ -15,21 +15,29 @@ def build_graphs(
         edge_pad: int = None,
         stg: str = 'fc',
         sym: bool = True):
-    """
-    Build graph matrix G, H from point set P. This function supports only cpu operations in numpy.
-    G, H is constructed from adjacency matrix A: A = G * H^T
-    :param P_np: point set containing point coordinates
-    :param n: number of exact points in the point set
-    :param n_pad: padded node length
-    :param edge_pad: padded edge length
-    :param stg: strategy to build graphs.
-                'tri', apply Delaunay triangulation or not.
-                'near', fully-connected manner, but edges which are longer than max(w, h) is removed
-                'fc'(default), a fully-connected graph is constructed
-    :param device: device. If not specified, it will be the same as the input
-    :return: G, H, edge_num
-    """  # noqa
+    """Build graph matrix G, H from point set P.
+    This function supports only cpu operations in numpy.
+    G, H is constructed from adjacency matrix A:
 
+    `A = G * H^T`
+
+    Args:
+        `P_np` (np.ndarray): Point set containing point coordinates.
+        `n` (int): Number of exact points in the point set.
+        `n_pad` (int, optional): Padded node length. Default: None.
+        `edge_pad` (int, optional): Padded edge length. Default: None.
+        `stg` (str, optional): Strategy to build graphs. Default: 'fc'.
+            Available options include:
+            'fc': Construct a fully connected graph
+            'tri': Construct graph by Delaunay Triangulation
+            'near': Construct graph by nearest neighbours
+        `sym` (bool, optional): Default: True.
+
+    Returns:
+        `A`: Adjacency matrix for input graph
+        `G`, `H`: `G[ic] = H[jc] = 1` if edge `c` starts from node `i` and ends at node `j`
+        `edge_num`: Number of edges
+    """
     assert stg in ('fc', 'tri', 'near'), f'Strategy {stg} not found.'
 
     if stg == 'tri':
@@ -66,8 +74,7 @@ def build_graphs(
 
 
 def delaunay_triangulate(P: np.ndarray):
-    """
-    Perform delaunay triangulation on point set P.
+    """Perform delaunay triangulation on point set P.
     :param P: point set
     :return: adjacency matrix A
     """
@@ -92,8 +99,7 @@ def delaunay_triangulate(P: np.ndarray):
 
 
 def fully_connect(P: np.ndarray, thre=None):
-    """
-    Fully connect a graph.
+    """Fully connect a graph.
     :param P: point set
     :param thre: edges that are longer than this threshold will be removed
     :return: adjacency matrix A
@@ -110,8 +116,7 @@ def fully_connect(P: np.ndarray, thre=None):
 
 
 def reshape_edge_feature(F: Tensor, G: Tensor, H: Tensor, device=None):
-    """
-    Reshape edge feature matrix into X, where features are arranged in the order in G, H.
+    """Reshape edge feature matrix into X, where features are arranged in the order in G, H.
     :param F: raw edge feature matrix
     :param G: factorized adjacency matrix, where A = G * H^T
     :param H: factorized adjacancy matrix, where A = G * H^T

@@ -33,22 +33,6 @@ class Gconv(nn.Layer):
     def forward(self, A, x, norm=True):
         if norm is True:
             A = F.normalize(A, p=1, axis=-2)
-
-        '''
-        st = time.time()
-        ax = self.a_fc(x)
-        ux = self.u_fc(x)
-        print('Twp Linear layer cost {}s'.format(time.time() - st))
-
-        st = time.time()
-        x = paddle.bmm(A, F.relu(ax))  # has size (bs, N, num_outputs)
-        print('bmm + relu cost {}s'.format(time.time() - st))
-
-        st = time.time()
-        x += F.relu(ux)
-        print('+= relu() cost {}s'.format(time.time() - st))
-
-        '''
         ax = self.a_fc(x)
         ux = self.u_fc(x)
         # has size (bs, N, num_outputs)

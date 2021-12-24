@@ -3,15 +3,20 @@ from .pdl_device_trans import place2str
 
 
 def pck(x, x_gt, perm_mat, dist_threshs, ns):
+    """Percentage of Correct Keypoints evaluation metric.
+
+    Args:
+        `x`: Candidate coordinates
+        `x_gt`: Ground truth coordinates
+        `perm_mat`: Permutation matrix or doubly stochastic matrix indicating correspondence
+        `dist_threshs`: An iterable list of thresholds in pixel
+        `ns`: Number of exact pairs
+
+    Returns:
+        `pck`: Percentage of Correct Keypoints
+        `match_num`: matched num of pairs
+        `total_num`: total num of pairs
     """
-    Percentage of Correct Keypoints evaluation metric.
-    :param x: candidate coordinates
-    :param x_gt: ground truth coordinates
-    :param perm_mat: permutation matrix or doubly stochastic matrix indicating correspondence
-    :param dist_threshs: a iterable list of thresholds in pixel
-    :param ns: number of exact pairs.
-    :return: pck, matched num of pairs, total num of pairs
-    """  # noqa
     device = place2str(x.place)
     paddle.set_device(device)
 
@@ -40,13 +45,18 @@ def pck(x, x_gt, perm_mat, dist_threshs, ns):
 
 
 def matching_accuracy(pmat_pred, pmat_gt, ns):
+    """Matching Accuracy between predicted permutation matrix and ground truth permutation matrix.
+
+    Args:
+        `pmat_pred`: Predicted permutation matrix
+        `pmat_gt`: Ground truth permutation matrix
+        `ns`: Number of exact pairs
+
+    Returns:
+        `acc`: matching accuracy
+        `match_num`: matched num of pairs
+        `total_num`: total num of pairs
     """
-    Matching Accuracy between predicted permutation matrix and ground truth permutation matrix.
-    :param pmat_pred: predicted permutation matrix
-    :param pmat_gt: ground truth permutation matrix
-    :param ns: number of exact pairs
-    :return: matching accuracy, matched num of pairs, total num of pairs
-    """  # noqa
     device = pmat_pred.place
     batch_num = pmat_pred.shape[0]
 
@@ -73,13 +83,15 @@ def matching_accuracy(pmat_pred, pmat_gt, ns):
 
 
 def objective_score(pmat_pred, affmtx):
+    """Objective score given predicted permutation matrix and affinity matrix from the problem.
+
+    Args:
+        `pmat_pred`: Predicted permutation matrix
+        `affmtx`: Affinity matrix from the problem
+
+    Returns:
+        `obj_score`: objective scores
     """
-    Objective score given predicted permutation matrix and affinity matrix from the problem.
-    :param pmat_pred: predicted permutation matrix
-    :param affmtx: affinity matrix from the problem
-    :param ns: number of exact pairs
-    :return: objective scores
-    """ # noqa
     batch_num = pmat_pred.shape[0]
 
     p_vec = pmat_pred.transpose((0, 2, 1)).reshape((batch_num, -1, 1))
@@ -91,8 +103,7 @@ def objective_score(pmat_pred, affmtx):
 
 
 def format_metric(ms) -> str:
-    r"""
-    Helping function for formatting single metric.
+    """Helper function for formatting single metric.
 
     :param ms: tensor containing metric
     :return: a formatted string containing mean and variance

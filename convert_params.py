@@ -1,4 +1,6 @@
 # Tribute to https://github.com/wuyang556/paddlevision
+import torch
+import paddle
 from collections import OrderedDict
 import paddle.fluid as fluid
 from torchvision import models
@@ -19,13 +21,17 @@ from src.utils.model_sl import load_model
 from src.utils.config import cfg
 
 
-def convert_params(model_th, model_pd, model_path):
-    """
-    convert pytorch model's parameters into paddlepaddle model
+def convert_params(
+        model_th: torch.nn.Module,
+        model_pd: paddle.nn.Layer,
+        model_path: str):
+    """Convert pytorch model's parameters into paddlepaddle model
     then save the converted model params as .pdparams
-    :param model_th: pytorch model which has loaded pretrained parameters.
-    :param model_pd: paddlepaddle dygraph model
-    :param model_path: paddlepaddle dygraph model path
+
+    Args:
+        `model_th` (torch.nn.Module): Pytorch model with pretrained parameters.
+        `model_pd` (paddle.nn.Layer): PaddlePaddle dygraph model
+        `model_path` (str): Path to save converted paddle params
     """
     state_dict_th = model_th.state_dict()
     state_dict_pd = model_pd.state_dict()
@@ -60,14 +66,17 @@ def convert_params(model_th, model_pd, model_path):
                 or "n_func" in key_th         # ad-hoc fixes for NGM
                 or "n_self_func" in key_th):  # ad-hoc fixes for NGM
             if len(state_dict_pd[key_pd].shape) < 4:
-                state_dict[key_pd] = state_dict_th[key_th].numpy().astype(
-                    "float32").transpose()
+                state_dict[key_pd] = state_dict_th[key_th]\
+                    .numpy()\
+                    .astype("float32").transpose()
             else:
-                state_dict[key_pd] = state_dict_th[key_th].numpy().astype(
-                    "float32")
+                state_dict[key_pd] = state_dict_th[key_th]\
+                    .numpy()\
+                    .astype("float32")
         else:
-            state_dict[key_pd] = state_dict_th[key_th].numpy().astype(
-                "float32")
+            state_dict[key_pd] = state_dict_th[key_th]\
+                .numpy()\
+                .astype("float32")
 
     assert len(state_dict_pd.keys()) == len(state_dict.keys())
     if (len(state_dict.keys()) + num_batches_tracked_th
@@ -82,20 +91,21 @@ def convert_params(model_th, model_pd, model_path):
 
     fluid.dygraph.save_dygraph(model_pd.state_dict(), model_path=model_path)
     print("model converted successfully.")
-    print(f'  Torch model has {len(state_dict_th.keys())} keys', end='. ')
-    print(f'Including {num_batches_tracked_th} keys not used during inference')
+    print(
+        f'  Torch model has {len(state_dict_th.keys())} keys',
+        f'Including {num_batches_tracked_th} keys not used during inference')
     print(f'  Paddle model has {len(state_dict.keys())} keys')
 
 
-def convert_and_save_model(model_paddle, model_torch, save_path):
-    print('## Torch State Dict:', len(model_torch.state_dict().keys()))
+def _convert_and_save_model(model_paddle, model_torch, save_path):
+    print('\n## Torch State Dict:', len(model_torch.state_dict().keys()))
     print(*model_torch.state_dict().keys(), sep='\n')
-    print('## Paddle State Dict:', len(model_paddle.state_dict().keys()))
+    print('\n## Paddle State Dict:', len(model_paddle.state_dict().keys()))
     print(*model_paddle.state_dict().keys(), sep='\n')
     convert_params(model_torch, model_paddle, save_path)
 
 
-def vgg_convert(paddle_param_path):
+def _vgg_convert(paddle_param_path):
     with fluid.dygraph.guard():
         model_th = models.vgg16_bn(pretrained=True)
         model_pd = vision.models.vgg16(pretrained=False, batch_norm=True)
@@ -107,57 +117,57 @@ def vgg_convert(paddle_param_path):
         convert_params(model_th, model_pd, model_path)
 
 
-def ngm_convert(torch_param_path, paddle_param_path):
+def _ngm_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_torch = TorchNGM()
         model_paddle = PaddleNGM()
         load_model(
             model_torch,
             torch_param_path)
-        convert_and_save_model(model_paddle, model_torch, paddle_param_path)
+        _convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
 
-def gmn_convert(torch_param_path, paddle_param_path):
+def _gmn_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_torch = TorchGMN()
         model_paddle = PaddleGMN()
         load_model(
             model_torch,
             torch_param_path)
-        convert_and_save_model(model_paddle, model_torch, paddle_param_path)
+        _convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
 
-def igm_convert(torch_param_path, paddle_param_path):
+def _igm_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_torch = TorchIGM()
         model_paddle = PaddleIGM()
         load_model(model_torch, torch_param_path)
-        convert_and_save_model(model_paddle, model_torch, paddle_param_path)
+        _convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
 
-def cie_convert(torch_param_path, paddle_param_path):
+def _cie_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_torch = TorchCIE()
         model_paddle = PaddleCIE()
         load_model(
             model_torch,
             torch_param_path)
-        convert_and_save_model(model_paddle, model_torch, paddle_param_path)
+        _convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
 
-def pca_convert(torch_param_path, paddle_param_path):
+def _pca_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_torch = tchPCA()
         model_paddle = pdlPCA()
         load_model(model_torch, torch_param_path)
-        convert_and_save_model(model_paddle, model_torch, paddle_param_path)
+        _convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
 
 if __name__ == '__main__':
     from src.utils.parse_args import parse_args
 
     args = parse_args(
-        'Deep learning of graph matching training & evaluation code.')
+        'Torch-to-Paddle model convertion for ThinkMatch.')
     INPUT_PATH = cfg.PRETRAINED_PATH
     OUTPUT_PATH = args.output_path
     ARCH = args.model_arch
@@ -170,18 +180,18 @@ if __name__ == '__main__':
     if ARCH is None:
         raise ValueError('Please specify model architecture by `-m`')
     elif 'CIE' in ARCH:
-        convertor = cie_convert
+        convertor = _cie_convert
     elif 'PCA' in ARCH:
-        convertor = pca_convert
+        convertor = _pca_convert
     elif 'VGG16BN' in ARCH:
-        convertor = vgg_convert(OUTPUT_PATH)
+        convertor = _vgg_convert(OUTPUT_PATH)
     elif 'IGM' in ARCH:
-        convertor = igm_convert
+        convertor = _igm_convert
     elif 'NGM' in ARCH:
-        convertor = ngm_convert
+        convertor = _ngm_convert
     elif 'GMN' in ARCH:
-        convertor = gmn_convert
+        convertor = _gmn_convert
     else:
-        raise ValueError(f'? {ARCH}')
+        raise ValueError(f'Unknown model architecture: {ARCH}')
 
     convertor(INPUT_PATH, OUTPUT_PATH)

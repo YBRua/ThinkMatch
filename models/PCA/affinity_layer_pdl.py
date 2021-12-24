@@ -6,17 +6,16 @@ from numpy.random import uniform
 
 
 class Affinity(nn.Layer):
-    """
-    Affinity Layer to compute the affinity matrix from feature space.
-    M = X * A * Y^T
-    Parameter: scale of weight d
-    Input: feature X, Y
-    Output: affinity matrix M
-    """
-
     def __init__(self, d):
+        """Affinity Layer for PCA and CIE
+        Computes the affinity matrix.
+
+        Args:
+            `d`: Scale of weight d
+        """
         super(Affinity, self).__init__()
         self.d = d
+
         # set parameters
         stdv = 1. / math.sqrt(self.d)
         tmp = uniform(low=-1*stdv, high=stdv, size=(self.d, self.d))
@@ -29,6 +28,15 @@ class Affinity(nn.Layer):
         self.add_parameter('A', self.A)
 
     def forward(self, X, Y):
+        """Foward pass for CIE Affinity Layer
+
+        Args:
+            X (Tensor): Input feature for graph 1
+            Y (Tensor): Input feature for graph 2
+
+        Returns:
+            M: Affinity matrix
+        """
         assert X.shape[2] == Y.shape[2] == self.d
         # M = paddle.matmul(X, self.A)
         M = paddle.matmul(X, (self.A + paddle.transpose(self.A, [1, 0])) / 2)
