@@ -190,8 +190,8 @@ def collate_fn(data: list):
                 sparse_dtype).todense() for x, y in zip(G2_gt, G1_gt)]  # 1 as source graph, 2 as target graph
             K1H = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
                 sparse_dtype).todense() for x, y in zip(H2_gt, H1_gt)]
-            # K1G = CSRMatrix3d(K1G)
-            # K1H = CSRMatrix3d(K1H)
+            K1G = CSRMatrix3d(K1G)
+            K1H = CSRMatrix3d(K1H)
             # NOTE: use dense implementation as workaround
             # K1G = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(G2_gt, G1_gt)]
             # K1H = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
