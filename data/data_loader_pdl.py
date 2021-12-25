@@ -9,8 +9,8 @@ from paddle.io import Dataset, DataLoader
 from src.utils_pdl.build_graphs import build_graphs
 # NOTE: The sparse matrices will be used when computing Kronecker Product
 #       currently we use a dense implementation as a workaround
-# from src.utils_pdl.fgm import kronecker_sparse
-# from src.sparse_torch import CSRMatrix3d
+from src.utils.fgm import kronecker_sparse
+from src.sparse_torch import CSRMatrix3d
 
 from src.utils.config import cfg
 
@@ -186,15 +186,15 @@ def collate_fn(data: list):
             G1_gt, G2_gt = ret['Gs']
             H1_gt, H2_gt = ret['Hs']
             sparse_dtype = np.float32
-            # K1G = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
-            #     sparse_dtype) for x, y in zip(G2_gt, G1_gt)]  # 1 as source graph, 2 as target graph
-            # K1H = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
-            #     sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
+            K1G = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
+                sparse_dtype).todense() for x, y in zip(G2_gt, G1_gt)]  # 1 as source graph, 2 as target graph
+            K1H = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
+                sparse_dtype).todense() for x, y in zip(H2_gt, H1_gt)]
             # K1G = CSRMatrix3d(K1G)
-            # K1H = CSRMatrix3d(K1H).transpose()
+            # K1H = CSRMatrix3d(K1H)
             # NOTE: use dense implementation as workaround
-            K1G = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(G2_gt, G1_gt)]
-            K1H = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
+            # K1G = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(G2_gt, G1_gt)]
+            # K1H = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
 
             # , K1G.transpose(keep_type=True), K1H.transpose(keep_type=True)
             ret['KGHs'] = K1G, K1H
