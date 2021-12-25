@@ -31,12 +31,22 @@ class Gconv(nn.Layer):
                               bias_attr=bias_attr_2)
 
     def forward(self, A, x, norm=True):
+        """Forward pass of basic graph convolutional layer
+
+        Args:
+            `A` (Tensor): Adjacent matrix for a certain graph
+            `x` (Tensor): Node feature
+            norm (bool, optional): Whether to apply L1 normalization to adjacency matrix `A`
+                Default: True.
+
+        Returns:
+            output
+        """
         if norm is True:
             A = F.normalize(A, p=1, axis=-2)
-        ax = self.a_fc(x)
-        ux = self.u_fc(x)
-        # has size (bs, N, num_outputs)
-        x = paddle.bmm(A, F.relu(ax)) + F.relu(ux)
+        msg_passing = paddle.bmm(A, F.relu(self.a_fc(x)))
+        node_passing = F.relu(self.u_fc(x))
+        x = msg_passing + node_passing
         return x
 
 

@@ -236,6 +236,7 @@ class PascalVOC:
 
         return anno_dict
 
+
 if __name__ == '__main__':
     dataset = PascalVOC('train', (256, 256))
     a = dataset.get_pair()

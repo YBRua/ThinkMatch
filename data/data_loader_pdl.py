@@ -3,8 +3,8 @@ import paddle
 import numpy as np
 import paddle.nn.functional as F
 from paddle.vision import transforms
-from data.pascal_voc import PascalVOC
-from data.willow_obj import WillowObject
+# from data.pascal_voc import PascalVOC
+# from data.willow_obj import WillowObject
 from paddle.io import Dataset, DataLoader
 from src.utils_pdl.build_graphs import build_graphs
 # NOTE: The sparse matrices will be used when computing Kronecker Product
@@ -19,12 +19,10 @@ class GMDataset(Dataset):
     def __init__(self, name, bm, length, cls=None, **args):
         self.name = name
         self.bm = bm
-        self.ds = eval(self.name)(**args)
         # NOTE images pairs are sampled randomly, so there is no exact definition of dataset size
         self.length = length
         # length here represents the iterations between two checkpoints
-        self.obj_size = self.ds.obj_resize
-        self.classes = self.ds.classes
+        self.obj_size = self.bm.obj_resize
         self.cls = None if cls == 'none' else cls
 
         if self.cls is None:

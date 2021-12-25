@@ -89,7 +89,7 @@ class WillowObject(BaseDataset):
         anno_pair[1]['keypoints'] = [anno_pair[1]['keypoints'][j] for j in col_list]
 
         return anno_pair, perm_mat
-    
+
     def __get_anno_dict(self, mat_file, cls):
         """
         Get an annotation dict from .mat annotation
