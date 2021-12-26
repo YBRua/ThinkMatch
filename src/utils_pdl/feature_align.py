@@ -4,8 +4,22 @@ from paddle import Tensor
 from .pdl_device_trans import place2int
 
 
-def eliphatfs_align(raw_feature, P, ns_t, ori_size):
-    interp = F.grid_sample(
+def feature_align_fast(raw_feature, P, ns_t, ori_size):
+    """Faster feature align with bi-linear interpolation.
+    Speeds up operation by vectorization
+
+    Implementation based on @eliphatfs.
+
+    Args:
+        raw_feature: Raw input features for keypoints
+        P: Set of keypoints
+        ns_t: Number of nodes. Features beyond this range will be set to 0
+        ori_size: Rescaling factor
+
+    Returns:
+        F_: Aligned features
+    """
+    F_ = F.grid_sample(
         raw_feature,
         2 * P.unsqueeze(-2) / ori_size[0] - 1,
         'bilinear',
@@ -13,8 +27,8 @@ def eliphatfs_align(raw_feature, P, ns_t, ori_size):
         align_corners=False
     ).squeeze(-1)
     for b, ns in enumerate(ns_t):
-        interp[b, :, ns:] = 0
-    return interp
+        F_[b, :, ns:] = 0
+    return F_
 
 
 def feature_align(
@@ -47,10 +61,10 @@ def feature_align(
     #     n_max = max(ns_t[idx], n_max)
 
     ori_size = paddle.to_tensor(ori_size, dtype='float32', place=device)
-    F = paddle.zeros(
+    F_ = paddle.zeros(
         [batch_num, channel_num, n_max],
         dtype='float32').cuda(place2int(device))
-    F.stop_gradient = False
+    F_.stop_gradient = False
     for idx, feature in enumerate(raw_feature):
         n = int(ns_t[idx].numpy())
         feat_size = paddle.to_tensor(
@@ -58,15 +72,15 @@ def feature_align(
             dtype='float32',
             place=device)
         _P = P[idx, 0:n]
-        F[idx, :, 0:n] = interp_2d(
+        F_[idx, :, 0:n] = interp_2d(
             feature,
             _P,
             ori_size,
             feat_size,
-            out=F[idx, :, 0:n])
+            out=F_[idx, :, 0:n])
         # interp_2d(feature, _P, ori_size, feat_size, out=F[idx, :, 0:n])
         # F[idx, :, 0:n] += interp_2d(feature, _P, ori_size, feat_size)
-    return F
+    return F_
 
 
 def interp_2d(

@@ -7,7 +7,7 @@ from src.lap_solvers_pdl.hungarian import hungarian
 from models.GMN.voting_layer_pdl import Voting
 from models.GMN.displacement_layer_pdl import Displacement
 from src.utils_pdl.build_graphs import reshape_edge_feature
-from src.utils_pdl.feature_align import feature_align
+from src.utils_pdl.feature_align import feature_align_fast
 from src.utils_pdl.factorize_graph_matching import construct_aff_mat_dense
 
 from src.utils.config import cfg
@@ -64,10 +64,10 @@ class Net(CNN):
             tgt_edge = self.l2norm(tgt_edge)
 
             # arrange features
-            U_src = feature_align(src_node, P_src, ns_src, self.rescale)
-            F_src = feature_align(src_edge, P_src, ns_src, self.rescale)
-            U_tgt = feature_align(tgt_node, P_tgt, ns_tgt, self.rescale)
-            F_tgt = feature_align(tgt_edge, P_tgt, ns_tgt, self.rescale)
+            U_src = feature_align_fast(src_node, P_src, ns_src, self.rescale)
+            F_src = feature_align_fast(src_edge, P_src, ns_src, self.rescale)
+            U_tgt = feature_align_fast(tgt_node, P_tgt, ns_tgt, self.rescale)
+            F_tgt = feature_align_fast(tgt_edge, P_tgt, ns_tgt, self.rescale)
 
         elif 'features' in data_dict:
             # synthetic data
