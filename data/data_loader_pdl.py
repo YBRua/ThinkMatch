@@ -184,7 +184,9 @@ def collate_fn(data: list):
     if 'Gs' in ret and 'Hs' in ret:
         try:
             G1_gt, G2_gt = ret['Gs']
+            print("G", G1_gt.shape, G2_gt.shape)
             H1_gt, H2_gt = ret['Hs']
+            print("H", H1_gt.shape, H2_gt.shape)
             sparse_dtype = np.float32
             # K1G = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
             #     sparse_dtype) for x, y in zip(G2_gt, G1_gt)]  # 1 as source graph, 2 as target graph
