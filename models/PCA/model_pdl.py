@@ -125,7 +125,7 @@ class Net(CNN):
                 emb1, emb2 = gnn_layer([A_src, emb1], [A_tgt, emb2])
 
             emb1_0, emb2_0 = emb1, emb2
-            s = paddle.zeros(emb1.shape[0], emb1.shape[1], emb2.shape[1])
+            s = paddle.zeros((emb1.shape[0], emb1.shape[1], emb2.shape[1]))
 
             for x in range(self.cross_iter_num):
                 i = self.gnn_layer - 2
