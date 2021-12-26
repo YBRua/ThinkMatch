@@ -1,6 +1,20 @@
 import paddle
+import paddle.nn.functional as F
 from paddle import Tensor
 from .pdl_device_trans import place2int
+
+
+def eliphatfs_align(raw_feature, P, ns_t, ori_size):
+    interp = F.grid_sample(
+        raw_feature,
+        2 * P.unsqueeze(-2) / ori_size[0] - 1,
+        'bilinear',
+        'border',
+        align_corners=False
+    ).squeeze(-1)
+    for b, ns in enumerate(ns_t):
+        interp[b, :, ns:] = 0
+    return interp
 
 
 def feature_align(
