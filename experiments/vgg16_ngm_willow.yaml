@@ -16,7 +16,7 @@ RANDOM_SEED: 123
 PRETRAINED_PATH: ./pretrained/paddle_vgg16_ngm_willow.pdparams
 
 # Only support inference on one GPU
-GPU: 1
+GPU: 0
 
 # Pairwise data configuration
 PROBLEM:
