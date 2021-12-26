@@ -184,19 +184,19 @@ def collate_fn(data: list):
     if 'Gs' in ret and 'Hs' in ret:
         try:
             G1_gt, G2_gt = ret['Gs']
-            print("G", G1_gt.shape, G2_gt.shape)
+            # print("G", G1_gt.shape, G2_gt.shape)
             H1_gt, H2_gt = ret['Hs']
-            print("H", H1_gt.shape, H2_gt.shape)
+            # print("H", H1_gt.shape, H2_gt.shape)
             sparse_dtype = np.float32
-            # K1G = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
-            #     sparse_dtype) for x, y in zip(G2_gt, G1_gt)]  # 1 as source graph, 2 as target graph
-            # K1H = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
-            #     sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
+            K1G = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
+                sparse_dtype) for x, y in zip(G2_gt, G1_gt)]  # 1 as source graph, 2 as target graph
+            K1H = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
+                sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
             # K1G = CSRMatrix3d(K1G)
             # K1H = CSRMatrix3d(K1H).transpose()
             # NOTE: use dense implementation as workaround
-            K1G = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(G2_gt, G1_gt)]
-            K1H = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
+            # K1G = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(G2_gt, G1_gt)]
+            # K1H = [np.kron(x.squeeze(), y.squeeze()).astype(sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
 
             # , K1G.transpose(keep_type=True), K1H.transpose(keep_type=True)
             ret['KGHs'] = K1G, K1H
