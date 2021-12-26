@@ -60,6 +60,7 @@ class GMDataset(Dataset):
         univ_size = [anno['univ_size'] for anno in anno_pair]
 
         P1 = np.array(P1)
+        print(P1.shape)
         P2 = np.array(P2)
 
         A1, G1, H1, e1 = build_graphs(
