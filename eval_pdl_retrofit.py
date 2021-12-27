@@ -4,8 +4,7 @@ import paddle.nn as nn
 import numpy as np
 from datetime import datetime
 from pathlib import Path
-# TODO: support for xlsx result output
-# import xlwt
+import xlwt
 from src.utils.timer import Timer
 import src.utils_pdl.evaluation_metric as metric
 
@@ -22,10 +21,10 @@ from src.utils.config import cfg
 def eval_model(
         model: nn.Layer,
         classes: List[str],
-        bm,
-        last_epoch=True,
-        verbose=False,
-        xls_sheet=None):
+        bm: Benchmark,
+        last_epoch: bool = True,
+        verbose: bool = False,
+        xls_sheet: xlwt.Worksheet = None):
     print('Start Evaluation.')
     start_time = time.time()
 
@@ -156,17 +155,56 @@ def eval_model(
     if was_training:
         model.train()
 
-    # TODO: add xlsx table output support
+    if xls_sheet is not None:
+        for idx, cls in enumerate(classes):
+            xls_sheet.write(0, idx+1, cls)
+        xls_sheet.write(0, idx+2, 'mean')
+
+    xls_row = 1
+
+    if xls_sheet is not None:
+        xls_sheet.write(xls_row, 0, 'precision')
+        xls_sheet.write(xls_row+1, 0, 'recall')
+        xls_sheet.write(xls_row+2, 0, 'f1')
+        xls_sheet.write(xls_row+3, 0, 'coverage')
+    for idx, (cls, cls_p, cls_r, cls_f1, cls_cvg) in enumerate(zip(classes, precisions, recalls, f1s, coverages)):
+        if xls_sheet is not None:
+            xls_sheet.write(xls_row, idx+1, f'{cls_p.item():.4f}')
+            xls_sheet.write(xls_row+1, idx+1, f'{cls_r.item():.4f}')
+            xls_sheet.write(xls_row+2, idx+1, f'{cls_f1.item():.4f}')
+            xls_sheet.write(xls_row+3, idx+1, f'{cls_cvg.item():.4f}')
+    if xls_sheet is not None:
+        xls_sheet.write(xls_row, idx+2, f"{result['mean']['precision']:.4f}")
+        xls_sheet.write(xls_row+1, idx+2, f"{result['mean']['recall']:.4f}")
+        xls_sheet.write(xls_row+2, idx+2, f"{result['mean']['f1']:.4f}")
+        xls_row += 4
+
     if not paddle.any(paddle.isnan(objs)):
         print('Normalized Objective Score')
+        if xls_sheet is not None:
+            xls_sheet.write(xls_row, 0, 'norm objscore')
         for idx, (cls, cls_obj) in enumerate(zip(classes, objs)):
             print(f'{cls} = {cls_obj.item():.4f}')
+            if xls_sheet is not None:
+                xls_sheet.write(xls_row, idx+1, f"{cls_obj.item():.4f}")
         print(f'Average Objective Score = {paddle.mean(objs).item():.4f}')
+        if xls_sheet is not None:
+            xls_sheet.write(xls_row, idx+2, f"{paddle.mean(objs).item():.4f}")
+            xls_row += 1
 
     print('Prediction time')
+    if xls_sheet is not None:
+        xls_sheet.write(xls_row, 0, 'time(ms)')
     for idx, (cls, cls_time) in enumerate(zip(classes, pred_time)):
         print(f'{cls} = {metric.format_metric(cls_time)}')
+        if xls_sheet is not None:
+            avg_time = paddle.mean(cls_time).item() * 1000
+            xls_sheet.write(xls_row, idx+1, f"{avg_time:.4f}")
     print(f'average time = {metric.format_metric(paddle.concat(pred_time))}')
+    if xls_sheet:
+        avg_time = paddle.mean(paddle.concat(pred_time)).item() * 1000
+        xls_sheet.write(xls_row, idx+2, f"{avg_time:.4f}")
+        xls_row += 1
 
     bm.rm_gt_cache(last_epoch=last_epoch)
 
@@ -215,6 +253,8 @@ if __name__ == '__main__':
     if not Path(cfg.OUTPUT_PATH).exists():
         Path(cfg.OUTPUT_PATH).mkdir(parents=True)
     now_time = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+    workbook = xlwt.Workbook()
+    res_sheet = workbook.add_sheet(f'Epoch{cfg.EVAL.EPOCH}')
     with DupStdoutFileManager(
             str(Path(cfg.OUTPUT_PATH) / ('eval_log_' + now_time + '.log'))
     ) as _:
@@ -238,5 +278,7 @@ if __name__ == '__main__':
             model, clss,
             benchmark,
             verbose=True,
-            xls_sheet=None
+            xls_sheet=res_sheet
         )
+
+    workbook.save(str(Path(cfg.OUTPUT_PATH) / (f'eval_result_{now_time}.xls')))

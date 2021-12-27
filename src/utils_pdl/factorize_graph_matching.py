@@ -29,9 +29,10 @@ def construct_aff_mat_dense_larger(Ke: Tensor, Kp: Tensor, KroG: List[Tensor], K
         Tensor: Affinity Matrix K
 
     NOTE: This implementation is a workaround for the original
-    CSR/CSC sparse implementation with GPU support in the torch version.
-    Since Paddle currently does not have adequate support for C++ extensions
-    It is dense and devecotrized, and thus it eats up a lot of Memory
+    CSR/CSC sparse implementation with GPU support in the torch version
+    because Paddle does not have adequate API support for C++ extensions.
+    It is dense and devecotrized, and thus it eats up a lot of Memory,
+    Does not run on IM-CPT dataset because GPU memory consuption is too high.
 
     NOTE: A vectorized version has been updated.
     It is suggested that one should use the newer version.
@@ -82,8 +83,9 @@ def construct_aff_mat_dense(Ke: Tensor, Kp: Tensor, KroG: List[Tensor], KroH: Li
     NOTE: This implementation is a workaround for the original
     CSR/CSC sparse implementation with GPU support in the torch version.
     Since Paddle currently does not have adequate support for C++ extensions
-    It is still dense but with some vectorized optimization,
-    so it occupies much less GPU memory
+    It is still dense but with some vectorized optimization.
+    However, this implementation still does NOT run on IM-CPT
+    due to extremely high GPU memory consumption.
     """
     B, P, Q = Ke.shape
     _, N, M = Kp.shape

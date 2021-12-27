@@ -50,9 +50,6 @@ class Net(CNN):
     def add_module(self, key, module):
         setattr(self, key, module)
 
-    def reload_backbone(self):
-        self.node_layers, self.edge_layers = self.get_backbone(True)
-
     def forward(self, data_dict, **kwargs):
         if 'images' in data_dict:
             # real image data
