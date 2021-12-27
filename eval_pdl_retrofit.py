@@ -199,11 +199,11 @@ def eval_model(
         print(f'{cls} = {metric.format_metric(cls_time)}')
         if xls_sheet is not None:
             avg_time = paddle.mean(cls_time).item() * 1000
-            xls_sheet.write(xls_row, idx+1, f"{avg_time:.4f}")
+            xls_sheet.write(xls_row, idx+1, f"{avg_time:.2f}")
     print(f'average time = {metric.format_metric(paddle.concat(pred_time))}')
     if xls_sheet:
         avg_time = paddle.mean(paddle.concat(pred_time)).item() * 1000
-        xls_sheet.write(xls_row, idx+2, f"{avg_time:.4f}")
+        xls_sheet.write(xls_row, idx+2, f"{avg_time:.2f}")
         xls_row += 1
 
     bm.rm_gt_cache(last_epoch=last_epoch)
