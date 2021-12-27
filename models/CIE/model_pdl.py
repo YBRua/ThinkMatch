@@ -147,6 +147,24 @@ class Net(CNN):
                 emb1 = new_emb1
                 emb2 = new_emb2
 
+                # edge cross embedding
+                # cross_graph_edge = getattr(self, f'cross_graph_edge_{i}')
+                # emb_edge1 = emb_edge1.tranpose((0, 3, 1, 2))
+                # emb_edge2 = emb_edge2.transpose((0, 3, 1, 2))
+                # s = s.unsqueeze(1)
+                # new_emb_edge1 = cross_graph_edge(
+                #     paddle.concat(
+                #         (emb_edge1, paddle.matmul(paddle.matmul(s, emb_edge2), s.transpose((0, 1, 3, 2)))),
+                #         axis=1)
+                #     .transpose((0, 2, 3, 1)))
+                # new_emb_edge2 = cross_graph_edge(
+                #     paddle.concat(
+                #         (emb_edge2, paddle.matmul(paddle.matmul(s.transpose((0, 1, 3, 2)), emb_edge1), s)),
+                #         axis=1)
+                #     .transpose((0, 2, 3, 1)))
+                # emb_edge1 = new_emb_edge1
+                # emb_edge2 = new_emb_edge2
+
         data_dict.update({
             'ds_mat': ss[-1],
             'perm_mat': hungarian(ss[-1], ns_src, ns_tgt)

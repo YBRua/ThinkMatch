@@ -4,8 +4,8 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 import numpy as np
 import random
-from data.pascal_voc import PascalVOC
-from data.willow_obj import WillowObject
+# from data.pascal_voc import PascalVOC
+# from data.willow_obj import WillowObject
 from src.utils.build_graphs import build_graphs
 from src.utils.fgm import kronecker_sparse
 from src.sparse_torch import CSRMatrix3d
