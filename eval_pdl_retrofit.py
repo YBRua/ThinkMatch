@@ -172,7 +172,7 @@ def eval_model(
             xls_sheet.write(xls_row, idx+1, f'{cls_p.item():.4f}')
             xls_sheet.write(xls_row+1, idx+1, f'{cls_r.item():.4f}')
             xls_sheet.write(xls_row+2, idx+1, f'{cls_f1.item():.4f}')
-            xls_sheet.write(xls_row+3, idx+1, f'{cls_cvg.item():.4f}')
+            xls_sheet.write(xls_row+3, idx+1, f'{cls_cvg:.4f}')
     if xls_sheet is not None:
         xls_sheet.write(xls_row, idx+2, f"{result['mean']['precision']:.4f}")
         xls_sheet.write(xls_row+1, idx+2, f"{result['mean']['recall']:.4f}")
