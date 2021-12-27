@@ -1,9 +1,9 @@
-MODEL_NAME: igm
+MODEL_NAME: res34_ssstm
 DATASET_NAME: voc
 
 DATASET_FULL_NAME: PascalVOC
 
-MODULE: models.IGM.model_pdl
+MODULE: models.SSStM.model_pdl
 
 BACKBONE: VGG16_bn
 
@@ -13,7 +13,7 @@ FP16: False
 STATISTIC_STEP: 50
 RANDOM_SEED: 123
 
-PRETRAINED_PATH: pretrained/paddle_res34_igm_voc.pdparams
+PRETRAINED_PATH: pretrained/paddle_res34_ssstm_voc.pdparams
 
 # Only support inference on one GPU
 GPU: 0
