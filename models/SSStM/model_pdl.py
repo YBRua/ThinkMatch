@@ -11,6 +11,10 @@ from extras.pointnetpp import p2_smaller_pdl
 
 class ResCls(nn.Layer):
     def __init__(self, n, intro, unit, outro, ndim=1):
+        """MLP with residual connections
+
+        "I'm a residual connection advocate" -- eliphatfs
+        """
         super().__init__()
         BN = [nn.BatchNorm1D, nn.BatchNorm1D,
               nn.BatchNorm2D, nn.BatchNorm3D][ndim]
@@ -31,6 +35,10 @@ class ResCls(nn.Layer):
 
 
 def my_align(raw_feature, P, ori_size: tuple):
+    """Fast feature align procudure
+    Extracts feature from feature maps around keypoints
+    A bilinear interpolation is used to smooth features
+    """
     return F.grid_sample(
         raw_feature,
         2 * P.unsqueeze(-2) / ori_size[0] - 1,
@@ -67,7 +75,7 @@ class Net(nn.Layer):
         self.edge_proj = ResCls(1, feature_lat * 3, 512, 64)
         self.tau = cfg.IGM.SK_TAU
         self.rescale = cfg.PROBLEM.RESCALE
-        self.pn = p2_smaller_pdl.get_model(256, 128, 64)
+        self.pointnet = p2_smaller_pdl.get_model(256, 128, 64)
         self.sinkhorn = Sinkhorn(
             max_iter=cfg.IGM.SK_ITER_NUM,
             tau=self.tau,
@@ -79,64 +87,83 @@ class Net(nn.Layer):
     def device(self):
         return next(self.parameters()).device
 
-    def encode(self, x):
-        r = self.resnet
-        x = r.conv1(x)
-        x = r.bn1(x)
-        x = r.relu(x)
+    def raw_edge_activations(self, x):
+        """Extracts features from each block activation of backbone.
+        Currently the backbone is a ResNet-34 CNN.
+        """
+        resnet = self.resnet
+        x = resnet.conv1(x)
+        x = resnet.bn1(x)
+        x = resnet.relu(x)
         yield x
-        x = r.maxpool(x)
+        x = resnet.maxpool(x)
 
-        x = r.layer1(x)
+        x = resnet.layer1(x)
         yield x
-        x = r.layer2(x)
+        x = resnet.layer2(x)
         yield x
-        x = r.layer3(x)
+        x = resnet.layer3(x)
         yield x
-        x = r.layer4(x)
+        x = resnet.layer4(x)
         yield x
-        x = r.avgpool(x)
+        x = resnet.avgpool(x)
         yield x
 
-    def halo(self, feat_srcs, feat_tgts, P_src, P_tgt):
-        U_src = paddle.concat([
-            my_align(feat_src, P_src, self.rescale) for feat_src in feat_srcs
-        ], axis=1)
-        U_tgt = paddle.concat([
-            my_align(feat_tgt, P_tgt, self.rescale) for feat_tgt in feat_tgts
-        ], axis=1)
+    def align_and_concat(self, feat_srcs, feat_tgts, P_src, P_tgt):
+        """Do featture align and concatenate fefatures
+        from source and target keypoints
+        """
+        U_src = paddle.concat(
+            [my_align(feat_src, P_src, self.rescale)
+                for feat_src in feat_srcs],
+            axis=1)
+        U_tgt = paddle.concat(
+            [my_align(feat_tgt, P_tgt, self.rescale)
+                for feat_tgt in feat_tgts],
+            axis=1)
+
         glob_src = feat_srcs[-1].flatten(1).unsqueeze(-1)
         glob_tgt = feat_tgts[-1].flatten(1).unsqueeze(-1)
-        # F_src = torch.cat([
-        #     U_src,
-        #     glob_tgt.expand(*glob_tgt.shape[:-1], U_src.shape[-1])
-        # ], 1)
-        # F_tgt = torch.cat([
-        #     U_tgt,
-        #     glob_src.expand(*glob_src.shape[:-1], U_tgt.shape[-1])
-        # ], 1)
-        ghalo_src = paddle.concat((glob_src, glob_tgt), axis=1)
-        ghalo_tgt = paddle.concat((glob_tgt, glob_src), axis=1)
-        return U_src, U_tgt, ghalo_src, ghalo_tgt
+
+        gcat_src = paddle.concat((glob_src, glob_tgt), axis=1)
+        gcat_tgt = paddle.concat((glob_tgt, glob_src), axis=1)
+        return U_src, U_tgt, gcat_src, gcat_tgt
 
     def edge_activations(self, feats, F_, P, n):
+        """"Activations are features." -- eliphatfs
+
+        Represent edge features with concatenation of
+        two endpoints and the midpoint of the two endpoints
+
+        The concatenated features are then feed into a Sigmoid as activation
+        """
         # F: BCN
         # P: BN2
         # n: B
-        ep = ((P.unsqueeze(-2) + P.unsqueeze(-3)) / 2).flatten(1, 2)  # B N^2 2
+        # represent each edge by midpoints of endpoints
+        midpoints = ((P.unsqueeze(-2) + P.unsqueeze(-3)) / 2)\
+            .flatten(1, 2)  # B N^2 2
+
+        # latent space
         L = (
             paddle.concat([F_, paddle.zeros_like(F_)], 1).unsqueeze(-1) +
             paddle.concat([paddle.zeros_like(F_), F_], 1).unsqueeze(-2)
         ).flatten(2)  # B2CN^2
+
+        # edge features extracted from edge midpoints
         E = paddle.concat([
-            my_align(feat, ep, self.rescale) for feat in feats
+            my_align(feat, midpoints, self.rescale) for feat in feats
         ], axis=1)  # BCN^2
+
         CE = paddle.concat([L, E], axis=1)
+
         mask = paddle.arange(
             F_.shape[-1]).expand((len(F_), F_.shape[-1])) < n.unsqueeze(-1)
+
         # BN
         mask = paddle.logical_and(mask.unsqueeze(-2), mask.unsqueeze(-1))
         mask = paddle.cast(mask, 'float32')
+
         return (
             F.sigmoid(self.edge_gate(CE))
             * F.normalize(self.edge_proj(CE), axis=1)
@@ -149,10 +176,10 @@ class Net(nn.Layer):
             P_src, P_tgt,
             n_src, n_tgt,
             e_src, e_tgt, g):
-        resc = paddle.to_tensor(self.rescale)
-        P_src, P_tgt = P_src / resc, P_tgt / resc
+        rescale = paddle.to_tensor(self.rescale)
+        P_src, P_tgt = P_src / rescale, P_tgt / rescale
         P_src, P_tgt = P_src.transpose((0, 2, 1)), P_tgt.transpose((0, 2, 1))
-        # not used during inference
+        # Optional augmentation
         # if self.training:
         #     P_src = P_src + torch.rand_like(P_src)[..., :1] * 0.2 - 0.1
         #     P_tgt = P_tgt + torch.rand_like(P_tgt)[..., :1] * 0.2 - 0.1
@@ -162,19 +189,29 @@ class Net(nn.Layer):
             .expand((len(y_tgt), y_tgt.shape[-1])) < n_tgt.unsqueeze(-1)
         key_mask_cat = paddle.concat(
             (key_mask_src, key_mask_tgt), -1).unsqueeze(1)
+
+        # HALO: merge keypoints
+        # Points from different images have different tags (0, 1)
         P_src = paddle.concat((P_src, paddle.zeros_like(P_src[:, :1])), 1)
         P_tgt = paddle.concat((P_tgt, paddle.ones_like(P_tgt[:, :1])), 1)
-        pcd = paddle.concat((P_src, P_tgt), -1)
+        point_clouds = paddle.concat((P_src, P_tgt), -1)
+
+        # HALO: Merge node features
         y_cat = paddle.concat((y_src, y_tgt), -1)
+
+        # HALO: Merge edge features
         e_cat = paddle.zeros([
             e_src.shape[0], e_src.shape[1],
             e_src.shape[2] + e_tgt.shape[2], e_src.shape[3] + e_tgt.shape[3]
         ], dtype=e_src.dtype)
         e_cat[..., :e_src.shape[2], :e_src.shape[3]] = e_src
         e_cat[..., e_src.shape[2]:, e_src.shape[3]:] = e_tgt
-        r1, r2 = self.pn(
-            paddle.concat((pcd, y_cat), 1) * key_mask_cat,
-            e_cat, g)
+
+        r1, r2 = self.pointnet(
+            paddle.concat((point_clouds, y_cat), 1) * key_mask_cat,
+            e_cat,
+            g)
+
         return r1[:, :, :y_src.shape[-1]], r2[:, :, :y_src.shape[-1]]
 
     def forward(self, data_dict, **kwargs):
@@ -183,27 +220,34 @@ class Net(nn.Layer):
         ns_src, ns_tgt = data_dict['ns']
 
         feat_srcs, feat_tgts = [], []
-        for feat in self.encode(paddle.concat([src, tgt])):
+        # merge srcs and tgts into the same batch for efficiency
+        for feat in self.raw_edge_activations(paddle.concat([src, tgt])):
             feat_srcs.append(feat[:len(src)])
             feat_tgts.append(feat[len(src):])
-        if self.training:
-            P_src = P_src + paddle.randn(P_src.shape, dtype='float32') * 2 - 1
-            P_tgt = P_tgt + paddle.randn(P_tgt.shape, dtype='float32') * 2 - 1
-        F_src, F_tgt, g_src, g_tgt = self.halo(
-            feat_srcs, feat_tgts, P_src, P_tgt)
 
+        if self.training:
+            P_src = P_src + paddle.rand(P_src.shape, dtype='float32') * 2 - 1
+            P_tgt = P_tgt + paddle.rand(P_tgt.shape, dtype='float32') * 2 - 1
+
+        # Construct node and edge features
+        F_src, F_tgt, g_src, g_tgt = self.align_and_concat(
+            feat_srcs,
+            feat_tgts,
+            P_src,
+            P_tgt)
         ea_src = self.edge_activations(feat_srcs, F_src, P_src, ns_src)
         ea_tgt = self.edge_activations(feat_tgts, F_tgt, P_tgt, ns_tgt)
 
+        # Dimension reduction via residual MLPs
         y_src, y_tgt = self.pix2pt_proj(F_src), self.pix2pt_proj(F_tgt)
-
         g_src, g_tgt = self.pix2cl_proj(g_src), self.pix2cl_proj(g_tgt)
+
         y_src, y_tgt = F.normalize(y_src, axis=1), F.normalize(y_tgt, axis=1)
         g_src, g_tgt = F.normalize(g_src, axis=1), F.normalize(g_tgt, axis=1)
 
-        ff_src, folding_src = self.points(
+        final_feat_src, folded_src = self.points(
             y_src, y_tgt, P_src, P_tgt, ns_src, ns_tgt, ea_src, ea_tgt, g_src)
-        ff_tgt, folding_tgt = self.points(
+        final_feat_tgt, folded_tgt = self.points(
             y_tgt, y_src, P_tgt, P_src, ns_tgt, ns_src, ea_tgt, ea_src, g_tgt)
 
         # sim = paddle.einsum(
@@ -212,10 +256,14 @@ class Net(nn.Layer):
         #     folding_tgt
         # )
         # workaround for paddle.einsum (added in 2.2, but we are in 2.1)
-        sim = paddle.bmm(folding_src.transpose((0, 2, 1)), folding_tgt)
+
+        sim = paddle.bmm(folded_src.transpose((0, 2, 1)), folded_tgt)
         data_dict['ds_mat'] = self.sinkhorn(
-            sim, ns_src, ns_tgt, dummy_row=True)
+            sim,
+            ns_src,
+            ns_tgt,
+            dummy_row=True)
         data_dict['perm_mat'] = hungarian(data_dict['ds_mat'], ns_src, ns_tgt)
-        data_dict['ff'] = [ff_src, ff_tgt]
+        data_dict['ff'] = [final_feat_src, final_feat_tgt]
         data_dict['gf'] = [g_src, g_tgt]
         return data_dict
