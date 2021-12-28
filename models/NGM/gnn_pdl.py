@@ -73,8 +73,8 @@ class GNNLayer(nn.Layer):
             assert n1.max() * n2.max() == x.shape[1]
             x3 = self.classifier(x2)
             # workaround for repeat_interleave.
-            n1_rep = repeat_interleave(n1, self.sk_channel, axis=0))
-            n2_rep = repeat_interleave(n2, self.sk_channel, axis=0))
+            n1_rep = repeat_interleave(n1, self.sk_channel, axis=0)
+            n2_rep = repeat_interleave(n2, self.sk_channel, axis=0)
             # n1_rep = torch.repeat_interleave(n1, self.sk_channel, dim=0)
             # n2_rep = torch.repeat_interleave(n2, self.sk_channel, dim=0)
             x4 = x3\
