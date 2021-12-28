@@ -191,7 +191,7 @@ class Net(CNN):
                 dummy_row=True)
 
             def repeat_(x, rep_num):
-                return repeat_interleave(x, rep_num, axis=0))
+                return repeat_interleave(x, rep_num, axis=0)
 
             if not self.training:
                 ss_gumbel = hungarian(ss_gumbel, repeat_(ns_src), repeat_(ns_tgt))
