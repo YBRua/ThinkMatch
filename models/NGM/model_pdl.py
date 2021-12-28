@@ -11,6 +11,7 @@ from models.NGM.geo_edge_feature_pdl import geo_edge_feature
 from models.GMN.affinity_layer_pdl import InnerpAffinity, GaussianAffinity
 from src.utils_pdl.evaluation_metric import objective_score
 from src.lap_solvers_pdl.hungarian import hungarian
+from src.utils_pdl.workarounds import repeat_interleave
 import math
 
 from src.utils.config import cfg
@@ -189,9 +190,8 @@ class Net(CNN):
                 sample_num=gumbel_sample_num,
                 dummy_row=True)
 
-            # FIXME: workaround with np. Does NOT support backward propagation
             def repeat_(x, rep_num):
-                return paddle.to_tensor(np.repeat(x, rep_num, axis=0))
+                return repeat_interleave(x, rep_num, axis=0))
 
             if not self.training:
                 ss_gumbel = hungarian(ss_gumbel, repeat_(ns_src), repeat_(ns_tgt))

@@ -4,6 +4,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 
 from src.lap_solvers_pdl.sinkhorn import Sinkhorn
+from src.utils_pdl.workarounds import repeat_interleave
 
 
 class GNNLayer(nn.Layer):
@@ -71,11 +72,9 @@ class GNNLayer(nn.Layer):
         if self.classifier is not None:
             assert n1.max() * n2.max() == x.shape[1]
             x3 = self.classifier(x2)
-            # np workaround for repeat_interleave.
-            # FIXME: Does NOT support backward propagation
-            # see <https://github.com/PaddlePaddle/Paddle/issues/37227>
-            n1_rep = paddle.to_tensor(np.repeat(n1, self.sk_channel, axis=0))
-            n2_rep = paddle.to_tensor(np.repeat(n2, self.sk_channel, axis=0))
+            # workaround for repeat_interleave.
+            n1_rep = repeat_interleave(n1, self.sk_channel, axis=0))
+            n2_rep = repeat_interleave(n2, self.sk_channel, axis=0))
             # n1_rep = torch.repeat_interleave(n1, self.sk_channel, dim=0)
             # n2_rep = torch.repeat_interleave(n2, self.sk_channel, dim=0)
             x4 = x3\
