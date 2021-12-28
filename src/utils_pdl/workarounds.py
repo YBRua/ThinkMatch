@@ -72,5 +72,5 @@ def _cum_repeat_0(
         paddle.ones_like(cumptr),
         overwrite=False
     )
-    visit = paddle.cumsum(idx)
-    return src[visit]
+    visit = paddle.cumsum(idx).item()
+    return paddle.gather(src[visit], axis=0)
