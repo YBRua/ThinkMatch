@@ -2,7 +2,7 @@ import paddle
 import paddle.nn as nn
 
 from src.lap_solvers_pdl.sinkhorn import Sinkhorn
-from src.utils_pdl.feature_align import feature_align_fast
+from src.utils_pdl.feature_align import feature_align_fast, feature_align
 from src.utils_pdl.gconv import Siamese_ChannelIndependentConv
 from models.PCA.affinity_layer_pdl import Affinity
 from src.lap_solvers_pdl.hungarian import hungarian
@@ -81,10 +81,10 @@ class Net(CNN):
             tgt_edge = self.l2norm(tgt_edge)
 
             # arrange features
-            U_src = feature_align_fast(src_node, P_src, ns_src, self.rescale)
-            F_src = feature_align_fast(src_edge, P_src, ns_src, self.rescale)
-            U_tgt = feature_align_fast(tgt_node, P_tgt, ns_tgt, self.rescale)
-            F_tgt = feature_align_fast(tgt_edge, P_tgt, ns_tgt, self.rescale)
+            U_src = feature_align(src_node, P_src, ns_src, self.rescale)
+            F_src = feature_align(src_edge, P_src, ns_src, self.rescale)
+            U_tgt = feature_align(tgt_node, P_tgt, ns_tgt, self.rescale)
+            F_tgt = feature_align(tgt_edge, P_tgt, ns_tgt, self.rescale)
         elif 'features' in data_dict:
             # synthetic data
             src, tgt = data_dict['features']
