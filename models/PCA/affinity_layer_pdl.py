@@ -38,7 +38,7 @@ class Affinity(nn.Layer):
             M: Affinity matrix
         """
         assert X.shape[2] == Y.shape[2] == self.d
-        M = paddle.matmul(X, self.A)
-        # M = paddle.matmul(X, (self.A + paddle.transpose(self.A, [1, 0])) / 2)
+        # M = paddle.matmul(X, self.A)
+        M = paddle.matmul(X, (self.A + paddle.transpose(self.A, [1, 0])) / 2)
         M = paddle.matmul(M, paddle.transpose(Y, [0, 2, 1]))
         return M
