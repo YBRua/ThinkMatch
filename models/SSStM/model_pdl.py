@@ -75,7 +75,7 @@ class Net(nn.Layer):
         self.edge_proj = ResCls(1, feature_lat * 3, 512, 64)
         self.tau = cfg.IGM.SK_TAU
         self.rescale = cfg.PROBLEM.RESCALE
-        self.pointnet = p2_smaller_pdl.get_model(256, 128, 64)
+        self.pn = p2_smaller_pdl.get_model(256, 128, 64)
         self.sinkhorn = Sinkhorn(
             max_iter=cfg.IGM.SK_ITER_NUM,
             tau=self.tau,
@@ -207,7 +207,8 @@ class Net(nn.Layer):
         e_cat[..., :e_src.shape[2], :e_src.shape[3]] = e_src
         e_cat[..., e_src.shape[2]:, e_src.shape[3]:] = e_tgt
 
-        r1, r2 = self.pointnet(
+        # pointnet
+        r1, r2 = self.pn(
             paddle.concat((point_clouds, y_cat), 1) * key_mask_cat,
             e_cat,
             g)
