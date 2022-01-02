@@ -2,7 +2,6 @@ import os
 import paddle.nn as nn
 from paddle.vision import models
 from src.utils_pdl.model_sl import load_model
-from convert_params import _vgg_convert
 
 
 class VGG16_base(nn.Layer):
@@ -26,13 +25,10 @@ class VGG16_base(nn.Layer):
             if os.path.exists('pretrained/backbone/vgg16_bn.pdparams'):
                 load_model(model, 'pretrained/backbone/vgg16_bn.pdparams')
             else:
-                print(
+                raise ValueError(
                     'Expected a pretrained vgg16bn at pretrained/backbone.',
-                    'But not found.')
-                print(
-                    'Converting one from PyTorch to PaddlePaddle.')
-                _vgg_convert('', 'pretrained/backbone/vgg16_bn.pdparams')
-                load_model(model, 'pretrained/backbone/vgg16_bn.pdparams')
+                    'But not found.',
+                    'Please convert one from PyTorch using convert_params.')
 
         conv_list = node_list = edge_list = []
 
