@@ -120,7 +120,7 @@ def _vgg_convert(torch_param_path, paddle_param_path):
 def _ngmv1_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_torch = TorchNGM()
-        model_paddle = PaddleNGM()
+        model_paddle = PaddleNGM(evaluation=True)
         load_model(
             model_torch,
             torch_param_path)
@@ -130,7 +130,7 @@ def _ngmv1_convert(torch_param_path, paddle_param_path):
 def _gmn_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_torch = TorchGMN()
-        model_paddle = PaddleGMN()
+        model_paddle = PaddleGMN(evaluation=True)
         load_model(
             model_torch,
             torch_param_path)
@@ -140,7 +140,7 @@ def _gmn_convert(torch_param_path, paddle_param_path):
 def _ssstm_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_torch = TorchSSStM()
-        model_paddle = PaddleSSStM()
+        model_paddle = PaddleSSStM(evaluation=True)
         load_model(model_torch, torch_param_path)
         _convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
@@ -148,7 +148,7 @@ def _ssstm_convert(torch_param_path, paddle_param_path):
 def _cie_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_torch = TorchCIE()
-        model_paddle = PaddleCIE()
+        model_paddle = PaddleCIE(evaluation=True)
         load_model(
             model_torch,
             torch_param_path)
@@ -158,7 +158,7 @@ def _cie_convert(torch_param_path, paddle_param_path):
 def _pca_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_torch = TorchPCA()
-        model_paddle = PaddlePCA()
+        model_paddle = PaddlePCA(evaluation=True)
         load_model(model_torch, torch_param_path)
         _convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
