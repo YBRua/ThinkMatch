@@ -107,41 +107,42 @@ def eval_model(model, dataloader, eval_epoch=None, verbose=False):
 
 
 if __name__ == '__main__':
-    from src.utils.dup_stdout_manager import DupStdoutFileManager
-    from src.utils.parse_args import parse_args
-    from src.utils.print_easydict import print_easydict
+    print('This file is deprecated! Please execute eval_pdl_retrofit.py')
+    # from src.utils.dup_stdout_manager import DupStdoutFileManager
+    # from src.utils.parse_args import parse_args
+    # from src.utils.print_easydict import print_easydict
 
-    args = parse_args('Deep learning of graph matching evaluation code.')
+    # args = parse_args('Deep learning of graph matching evaluation code.')
 
-    import importlib
-    mod = importlib.import_module(cfg.MODULE)
-    Net = mod.Net
+    # import importlib
+    # mod = importlib.import_module(cfg.MODULE)
+    # Net = mod.Net
 
-    paddle.seed(cfg.RANDOM_SEED)
-    paddle.set_device(device='gpu:0')
+    # paddle.seed(cfg.RANDOM_SEED)
+    # paddle.set_device(device='gpu:0')
 
-    image_dataset = GMDataset(cfg.DATASET_FULL_NAME,
-                              sets='test',
-                              length=cfg.EVAL.SAMPLES,
-                              obj_resize=cfg.PAIR.RESCALE)
-    dataloader = get_dataloader(image_dataset)
+    # image_dataset = GMDataset(cfg.DATASET_FULL_NAME,
+    #                           sets='test',
+    #                           length=cfg.EVAL.SAMPLES,
+    #                           obj_resize=cfg.PAIR.RESCALE)
+    # dataloader = get_dataloader(image_dataset)
 
-    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    # #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    model = Net()
-    load_model(model, 'src/utils_pdl/pca.pdparams')
-    #load_model(model, 'pretrained_vgg16_pca_voc.pdparams')
-    #model = model.to(device)
-    #model = DataParallel(model, device_ids=cfg.GPUS)
+    # model = Net()
+    # load_model(model, 'src/utils_pdl/pca.pdparams')
+    # #load_model(model, 'pretrained_vgg16_pca_voc.pdparams')
+    # #model = model.to(device)
+    # #model = DataParallel(model, device_ids=cfg.GPUS)
 
-    if not Path(cfg.OUTPUT_PATH).exists():
-        Path(cfg.OUTPUT_PATH).mkdir(parents=True)
-    now_time = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-    with DupStdoutFileManager(str(Path(cfg.OUTPUT_PATH) / ('eval_log_' + now_time + '.log'))) as _:
-        print_easydict(cfg)
-        classes = dataloader.dataset.classes
-        pcks = eval_model(model, dataloader,
-                          eval_epoch=cfg.EVAL.EPOCH if cfg.EVAL.EPOCH != 0 else None,
-                          verbose=True)
+    # if not Path(cfg.OUTPUT_PATH).exists():
+    #     Path(cfg.OUTPUT_PATH).mkdir(parents=True)
+    # now_time = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+    # with DupStdoutFileManager(str(Path(cfg.OUTPUT_PATH) / ('eval_log_' + now_time + '.log'))) as _:
+    #     print_easydict(cfg)
+    #     classes = dataloader.dataset.classes
+    #     pcks = eval_model(model, dataloader,
+    #                       eval_epoch=cfg.EVAL.EPOCH if cfg.EVAL.EPOCH != 0 else None,
+    #                       verbose=True)
 
 

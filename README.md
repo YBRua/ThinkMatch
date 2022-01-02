@@ -2,6 +2,8 @@
 
 This repository provides the non-official PaddlePaddle implementation of deep graph matching models in [ThinkMatch](https://github.com/Thinklab-SJTU/ThinkMatch).
 
+You can check the oringal [ReadMe](./README_OLD.md) here
+
 ## Contents
 
 - [Getting Started](#get-started): Setting up the environment
