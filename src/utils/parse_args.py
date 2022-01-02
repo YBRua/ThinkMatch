@@ -51,7 +51,7 @@ def parse_args(description):
         cfg.MODULE) != 0,\
         'Please specify a module name in your yaml file'\
         + '(e.g. MODULE: models.PCA.model).'
-    assert len(cfg.DATASET_FULL_NAME) != 0  or args.model_arch in 'VGG16BN',\
+    assert len(cfg.DATASET_FULL_NAME) != 0 or args.model_arch in 'VGG16BN',\
         'Please specify the full name of dataset in your yaml file'\
         + '(e.g. DATASET_FULL_NAME: PascalVOC).'
 
@@ -59,7 +59,8 @@ def parse_args(description):
         outp_path = get_output_dir(cfg.MODEL_NAME, cfg.DATASET_NAME)
         cfg_from_list(['OUTPUT_PATH', outp_path])
     assert len(
-        cfg.OUTPUT_PATH) != 0, 'Invalid OUTPUT_PATH!'\
+        cfg.OUTPUT_PATH) != 0 or args.model_arch in 'VGG16BN',\
+        'Invalid OUTPUT_PATH!'\
         + 'Make sure model name and dataset name are specified.'
     if not Path(cfg.OUTPUT_PATH).exists():
         Path(cfg.OUTPUT_PATH).mkdir(parents=True)
