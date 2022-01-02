@@ -18,7 +18,7 @@ CNN = eval(f'src.utils_pdl.backbone.{cfg.BACKBONE}')
 
 class Net(CNN):
     def __init__(self, evaluation=False):
-        super(Net, self).__init__(evaluation)
+        super(Net, self).__init__(evaluation=evaluation)
         self.affinity_layer = Affinity(cfg.GMN.FEATURE_CHANNEL)
 
         self.power_iteration = PowerIteration(

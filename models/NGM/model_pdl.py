@@ -22,7 +22,7 @@ CNN = eval(f'src.utils_pdl.backbone.{cfg.BACKBONE}')
 
 class Net(CNN):
     def __init__(self, evaluation=False):
-        super(Net, self).__init__(evaluation)
+        super(Net, self).__init__(evaluation=evaluation)
 
         if cfg.NGM.EDGE_FEATURE == 'cat':
             self.affinity_layer = InnerpAffinity(cfg.NGM.FEATURE_CHANNEL)
