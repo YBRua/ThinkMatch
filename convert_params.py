@@ -105,15 +105,15 @@ def _convert_and_save_model(model_paddle, model_torch, save_path):
     convert_params(model_torch, model_paddle, save_path)
 
 
-def _vgg_convert(paddle_param_path):
+def _vgg_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_th = models.vgg16_bn(pretrained=True)
         model_pd = vision.models.vgg16(pretrained=False, batch_norm=True)
         model_path = paddle_param_path
-        print(model_th.state_dict().keys(), sep='\n')
-        print(len(model_th.state_dict().keys()))
-        print(model_pd.state_dict().keys(), sep='\n')
-        print(len(model_pd.state_dict().keys()))
+        print('\n## Torch State Dict:', len(model_th.state_dict().keys()))
+        print(*model_th.state_dict().keys(), sep='\n')
+        print('\n## Paddle State Dict:', len(model_pd.state_dict().keys()))
+        print(*model_pd.state_dict().keys(), sep='\n')
         convert_params(model_th, model_pd, model_path)
 
 
@@ -184,7 +184,7 @@ if __name__ == '__main__':
     elif 'PCA' in ARCH:
         convertor = _pca_convert
     elif 'VGG16BN' in ARCH:
-        convertor = _vgg_convert(OUTPUT_PATH)
+        convertor = _vgg_convert
     elif 'SSStM' in ARCH:
         convertor = _ssstm_convert
     elif 'NGMv1' in ARCH:
