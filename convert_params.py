@@ -6,12 +6,12 @@ import paddle.fluid as fluid
 from torchvision import models
 from paddle import vision
 
-from models.PCA.model import Net as tchPCA
-from models.PCA.model_pdl import Net as pdlPCA
+from models.PCA.model import Net as TorchPCA
+from models.PCA.model_pdl import Net as PaddlePCA
 from models.CIE.model import Net as TorchCIE
 from models.CIE.model_pdl import Net as PaddleCIE
-from models.IGM.model import Net as TorchIGM
-from models.IGM.model_pdl import Net as PaddleIGM
+from models.SSStM.model import Net as TorchSSStM
+from models.SSStM.model_pdl import Net as PaddleSSStM
 from models.NGM.model import Net as TorchNGM
 from models.NGM.model_pdl import Net as PaddleNGM
 from models.GMN.model import Net as TorchGMN
@@ -117,7 +117,7 @@ def _vgg_convert(paddle_param_path):
         convert_params(model_th, model_pd, model_path)
 
 
-def _ngm_convert(torch_param_path, paddle_param_path):
+def _ngmv1_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
         model_torch = TorchNGM()
         model_paddle = PaddleNGM()
@@ -137,10 +137,10 @@ def _gmn_convert(torch_param_path, paddle_param_path):
         _convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
 
-def _igm_convert(torch_param_path, paddle_param_path):
+def _ssstm_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
-        model_torch = TorchIGM()
-        model_paddle = PaddleIGM()
+        model_torch = TorchSSStM()
+        model_paddle = PaddleSSStM()
         load_model(model_torch, torch_param_path)
         _convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
@@ -157,8 +157,8 @@ def _cie_convert(torch_param_path, paddle_param_path):
 
 def _pca_convert(torch_param_path, paddle_param_path):
     with fluid.dygraph.guard():
-        model_torch = tchPCA()
-        model_paddle = pdlPCA()
+        model_torch = TorchPCA()
+        model_paddle = PaddlePCA()
         load_model(model_torch, torch_param_path)
         _convert_and_save_model(model_paddle, model_torch, paddle_param_path)
 
@@ -185,10 +185,10 @@ if __name__ == '__main__':
         convertor = _pca_convert
     elif 'VGG16BN' in ARCH:
         convertor = _vgg_convert(OUTPUT_PATH)
-    elif 'IGM' in ARCH:
-        convertor = _igm_convert
-    elif 'NGM' in ARCH:
-        convertor = _ngm_convert
+    elif 'SSStM' in ARCH:
+        convertor = _ssstm_convert
+    elif 'NGMv1' in ARCH:
+        convertor = _ngmv1_convert
     elif 'GMN' in ARCH:
         convertor = _gmn_convert
     else:
