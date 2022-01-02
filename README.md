@@ -111,7 +111,7 @@ python convert_params.py --cfg ./experiments/vgg16_cie_voc.yaml -m CIE -i ./pret
 
 #### Cheatsheet
 
-We provide a [cheetsheet](./convert_params_cheatsheet.md) which lists all commands to convert supported models from PyTorch to PaddlePaddle. You can simple copy and paste them.
+We provide a [cheatsheet](./convert_params_cheatsheet.md) which lists all commands to convert supported models from PyTorch to PaddlePaddle. You can simply copy and paste them.
 
 #### Parameter Conversion Support List
 
