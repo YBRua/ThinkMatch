@@ -245,7 +245,7 @@ if __name__ == '__main__':
     print(f'Using GPU {device}')
     paddle.device.set_device(device)
 
-    model = Net()
+    model = Net(evaluation=True)
     # model = model.to(device)
     # TODO: Add support for DataParallel
     # eliphatfs: Dont add it. Nobody uses it.

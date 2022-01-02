@@ -14,8 +14,8 @@ CNN = eval(f'src.utils_pdl.backbone.{cfg.BACKBONE}')
 
 
 class Net(CNN):
-    def __init__(self):
-        super(Net, self).__init__()
+    def __init__(self, evaluation=False):
+        super(Net, self).__init__(evaluation)
         self.sinkhorn = Sinkhorn(
             max_iter=cfg.CIE.SK_ITER_NUM,
             epsilon=cfg.CIE.SK_EPSILON,

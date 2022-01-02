@@ -65,11 +65,13 @@ def unbatch_features(orig, embeddings, num_vertices):
 
 
 class Net(nn.Layer):
-    def __init__(self):
+    # evaluation is not used here
+    # it is only for interface consistency
+    def __init__(self, evaluation=False):
         super().__init__()
         # backbone
         self.resnet = resnet34(pretrained=False)
-        
+
         # feature dimensionality reduction
         feature_lat = 64 + (64 + 128 + 256 + 512 + 512)
         self.pix2pt_proj = ResCls(1, feature_lat, 512, 256)
@@ -79,10 +81,10 @@ class Net(nn.Layer):
 
         self.tau = cfg.IGM.SK_TAU
         self.rescale = cfg.PROBLEM.RESCALE
-        
+
         # pointnet
         self.pn = p2_smaller_pdl.get_model(256, 128, 64)
-        
+
         # sinkhorn
         self.sinkhorn = Sinkhorn(
             max_iter=cfg.IGM.SK_ITER_NUM,

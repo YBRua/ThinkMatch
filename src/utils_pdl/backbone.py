@@ -6,28 +6,33 @@ from convert_params import _vgg_convert
 
 
 class VGG16_base(nn.Layer):
-    def __init__(self, batch_norm=True):
+    def __init__(self, batch_norm=True, evaluation=False):
         super(VGG16_base, self).__init__()
-        self.node_layers, self.edge_layers = self.get_backbone(batch_norm)
+        self.node_layers, self.edge_layers = self.get_backbone(batch_norm, evaluation)
 
     def forward(self, *input):
         raise NotImplementedError
 
     @staticmethod
-    def get_backbone(batch_norm):
+    def get_backbone(batch_norm, evaluation):
         """
         Get pretrained VGG16 models for feature extraction.
         :return: feature sequence
         """
         model = models.vgg16(pretrained=False, batch_norm=batch_norm)
-        if os.path.exists('pretrained/backbone/vgg16_bn.pdparams'):
-            load_model(model, 'pretrained/backbone/vgg16_bn.pdparams')
-        else:
-            print(
-                'Expected a pretrained Paddle vgg16bn at pretrained/backbone')
-            print(
-                'Converting one from PyTorch to PaddlePaddle.')
-            _vgg_convert('', 'pretrained/backbone/vgg16_bn.pdparams')
+        # only load pretrained vgg16 during training
+        if not evaluation:
+            print("Loading pretrained VGG16")
+            if os.path.exists('pretrained/backbone/vgg16_bn.pdparams'):
+                load_model(model, 'pretrained/backbone/vgg16_bn.pdparams')
+            else:
+                print(
+                    'Expected a pretrained vgg16bn at pretrained/backbone.',
+                    'But not found.')
+                print(
+                    'Converting one from PyTorch to PaddlePaddle.')
+                _vgg_convert('', 'pretrained/backbone/vgg16_bn.pdparams')
+                load_model(model, 'pretrained/backbone/vgg16_bn.pdparams')
 
         conv_list = node_list = edge_list = []
 
