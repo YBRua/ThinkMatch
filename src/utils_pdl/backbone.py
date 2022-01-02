@@ -64,13 +64,13 @@ class VGG16_base(nn.Layer):
 
 
 class VGG16_bn(VGG16_base):
-    def __init__(self):
-        super(VGG16_bn, self).__init__(True)
+    def __init__(self, batch_norm=True, evaluation=False):
+        super(VGG16_bn, self).__init__(batch_norm=True, evaluation=evaluation)
 
 
 class VGG16(VGG16_base):
-    def __init__(self):
-        super(VGG16, self).__init__(False)
+    def __init__(self, batch_norm=True, evaluation=False):
+        super(VGG16, self).__init__(batch_norm=False, evaluation=evaluation)
 
 
 class NoBackbone(nn.Layer):
