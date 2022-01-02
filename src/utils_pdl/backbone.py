@@ -18,7 +18,7 @@ class VGG16_base(nn.Layer):
         :return: feature sequence
         """
         model = models.vgg16(pretrained=False, batch_norm=batch_norm)
-        load_model(model, 'pretrained/backbone/vgg16_bn.pdparams')
+        # load_model(model, 'pretrained/backbone/vgg16_bn.pdparams')
 
         conv_list = node_list = edge_list = []
 
