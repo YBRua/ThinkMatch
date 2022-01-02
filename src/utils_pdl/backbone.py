@@ -27,7 +27,7 @@ class VGG16_base(nn.Layer):
                 'Expected a pretrained Paddle vgg16bn at pretrained/backbone')
             print(
                 'Converting one from PyTorch to PaddlePaddle.')
-            _vgg_convert('pretrained/backbone/vgg16_bn.pdparams')
+            _vgg_convert('', 'pretrained/backbone/vgg16_bn.pdparams')
 
         conv_list = node_list = edge_list = []
 
