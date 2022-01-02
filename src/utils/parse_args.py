@@ -51,7 +51,7 @@ def parse_args(description):
         cfg.MODULE) != 0,\
         'Please specify a module name in your yaml file'\
         + '(e.g. MODULE: models.PCA.model).'
-    assert len(cfg.DATASET_FULL_NAME) != 0,\
+    assert len(cfg.DATASET_FULL_NAME) != 0  or args.model_arch in 'VGG16BN',\
         'Please specify the full name of dataset in your yaml file'\
         + '(e.g. DATASET_FULL_NAME: PascalVOC).'
 
