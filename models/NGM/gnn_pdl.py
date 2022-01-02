@@ -8,8 +8,16 @@ from src.utils_pdl.workarounds import repeat_interleave
 
 
 class GNNLayer(nn.Layer):
-    def __init__(self, in_node_features, in_edge_features, out_node_features, out_edge_features,
-                 sk_channel=0, sk_iter=20, sk_tau=0.05, edge_emb=False):
+    def __init__(
+            self,
+            in_node_features,
+            in_edge_features,
+            out_node_features,
+            out_edge_features,
+            sk_channel=0,
+            sk_iter=20,
+            sk_tau=0.05,
+            edge_emb=False):
         super(GNNLayer, self).__init__()
         self.in_nfeat = in_node_features
         self.in_efeat = in_edge_features

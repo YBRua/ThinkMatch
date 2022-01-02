@@ -73,6 +73,7 @@ class GMDataset(Dataset):
             A2, G2, H2, e2 = build_graphs(
                 P2, n2, stg=cfg.GRAPH.TGT_GRAPH_CONSTRUCT, sym=cfg.GRAPH.SYM_ADJACENCY)
 
+        # TODO: we currently do not support pyg graphs
         # pyg_graph1 = self.to_pyg_graph(A1, P1)
         # pyg_graph2 = self.to_pyg_graph(A2, P2)
 
@@ -188,8 +189,9 @@ def collate_fn(data: list):
             H1_gt, H2_gt = ret['Hs']
             # print("H", H1_gt.shape, H2_gt.shape)
             sparse_dtype = np.float32
+            # 1 as source graph, 2 as target graph
             K1G = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
-                sparse_dtype) for x, y in zip(G2_gt, G1_gt)]  # 1 as source graph, 2 as target graph
+                sparse_dtype) for x, y in zip(G2_gt, G1_gt)]
             K1H = [kronecker_sparse(x.squeeze(), y.squeeze()).astype(
                 sparse_dtype) for x, y in zip(H2_gt, H1_gt)]
             # K1G = CSRMatrix3d(K1G)

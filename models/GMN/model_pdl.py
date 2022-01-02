@@ -95,7 +95,9 @@ class Net(CNN):
         v = self.power_iteration.forward(M)
         s = v.reshape([v.shape[0], P_tgt.shape[1], -1]).transpose((0, 2, 1))
 
+        # NOTE: Voting layer has been merged into Sinkhorn layer
         # s = self.voting_layer.forward(s, ns_src, ns_tgt)
+
         s = self.bi_stochastic.forward(s, ns_src, ns_tgt)
 
         # d, _ = self.displacement_layer.forward(s, P_src, P_tgt)
