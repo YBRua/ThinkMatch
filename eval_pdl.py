@@ -144,5 +144,3 @@ if __name__ == '__main__':
     #     pcks = eval_model(model, dataloader,
     #                       eval_epoch=cfg.EVAL.EPOCH if cfg.EVAL.EPOCH != 0 else None,
     #                       verbose=True)
-
-
